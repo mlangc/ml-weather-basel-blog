@@ -1,0 +1,32 @@
+name := "wetter-frosch"
+
+version := "0.1"
+
+scalaVersion := "2.12.6"
+
+val dl4jVer = "0.9.1"
+libraryDependencies += "org.deeplearning4j" % "deeplearning4j-core" % dl4jVer
+libraryDependencies += "org.nd4j" % "nd4j-native-platform" % dl4jVer
+libraryDependencies += "org.datavec" % "datavec-api" % dl4jVer
+
+
+val smileVer = "1.5.1"
+libraryDependencies += "com.github.haifengl" %% "smile-scala" % smileVer
+libraryDependencies += "com.github.haifengl" % "smile-netlib" % smileVer
+
+val evilPlotVer = "0.4.2-SNAPSHOT"
+resolvers += Resolver.bintrayRepo("cibotech", "public")
+libraryDependencies += "com.cibo" %% "evilplot" % evilPlotVer
+libraryDependencies += "com.cibo" %% "evilplot-repl" % evilPlotVer
+libraryDependencies += "com.twelvemonkeys.imageio" % "imageio-core" % "3.4.1"
+
+
+libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0"
+libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3"
+
+
+
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.5" % Test
+
+
+
