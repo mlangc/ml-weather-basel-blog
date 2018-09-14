@@ -4,7 +4,7 @@ import scala.annotation.tailrec
 
 import _root_.smile.regression.LASSO
 import com.typesafe.scalalogging.StrictLogging
-import math.abs
+import scala.math.abs
 
 import com.github.mlangc.wetterfrosch.smile.SmileUtils
 
