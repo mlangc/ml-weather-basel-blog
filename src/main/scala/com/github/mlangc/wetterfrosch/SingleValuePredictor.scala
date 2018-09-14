@@ -1,11 +1,24 @@
 package com.github.mlangc.wetterfrosch
 
 trait SingleValuePredictor {
-  def predict(seq: Seq[Map[String, Double]]): Double = {
+  /**
+    * The name of the column we want to predict
+    */
+  def targetCol: String
+
+  /**
+    * Makes a single prediction from a time series
+    */
+  def predictOne(seq: Seq[Map[String, Double]]): Double = {
     predict(Seq(seq)).head
   }
 
-  def predict(seqs: Seq[Seq[Map[String, Double]]])(implicit dummy: DummyImplicit): Seq[Double]
+  /**
+    * Makes predictions from multiple time series
+    */
+  def predict(seqs: Seq[Seq[Map[String, Double]]]): Seq[Double]
 
-  def targetCol: String
+  override def toString: String = {
+    getClass.getSimpleName + s"($targetCol)"
+  }
 }

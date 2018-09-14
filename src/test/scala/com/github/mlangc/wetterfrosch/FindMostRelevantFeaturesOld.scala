@@ -3,7 +3,6 @@ package com.github.mlangc.wetterfrosch
 import scala.annotation.tailrec
 
 import _root_.smile.regression.LASSO
-import at.lnet.wetterfrosch.smile.SmileUtils
 import com.typesafe.scalalogging.StrictLogging
 import math.abs
 

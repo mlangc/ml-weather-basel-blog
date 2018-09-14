@@ -1,9 +1,6 @@
 package com.github.mlangc.wetterfrosch.custom
 
-import at.lnet.wetterfrosch.HistoryExportCols
-import at.lnet.wetterfrosch.SingleValuePredictor
-import at.lnet.wetterfrosch.SingleValuePredictorTrainer
-import at.lnet.wetterfrosch.custom.StatHelpers.mean
+import com.github.mlangc.wetterfrosch.custom.StatHelpers.mean
 import com.github.mlangc.wetterfrosch.HistoryExportCols
 import com.github.mlangc.wetterfrosch.SingleValuePredictor
 import com.github.mlangc.wetterfrosch.SingleValuePredictorTrainer
@@ -24,7 +21,7 @@ class MonthlyMeanSingleValuePredictorTrainer extends SingleValuePredictorTrainer
     new SingleValuePredictor {
       def targetCol: String = outerTargetCol
 
-      def predict(seqs: Seq[Seq[Map[String, Double]]])(implicit dummy: DummyImplicit): Seq[Double] = {
+      def predict(seqs: Seq[Seq[Map[String, Double]]]): Seq[Double] = {
         seqs.map { seq =>
           valMonthTable.getOrElse(seq.last(HistoryExportCols.Month), generalMean)
         }

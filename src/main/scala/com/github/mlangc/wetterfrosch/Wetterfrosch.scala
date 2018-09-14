@@ -1,8 +1,5 @@
 package com.github.mlangc.wetterfrosch
 
-import at.lnet.wetterfrosch.custom.PersistenceModelSingleValuePredictor
-import at.lnet.wetterfrosch.dl4j.SingleValueOutputRnnTrainer
-import at.lnet.wetterfrosch.smile.{SmileLassoRegressionSingleValueTrainer, SmileRidgeRegressionTrainer}
 import com.cibo.evilplot.colors.HTMLNamedColors
 import com.cibo.evilplot.displayPlot
 import com.cibo.evilplot.numeric.Point
@@ -18,7 +15,7 @@ import com.typesafe.scalalogging.StrictLogging
 
 object Wetterfrosch extends StrictLogging {
   private def seed = 42
-  private def timeSeriesLen = 2
+  private def timeSeriesLen = 1
   private def batchSize = 64
   private val evaluator = new SingleValueRegressionEvaluator
   private def targetCol: String = HistoryExportCols.TotalPrecipitationDaily
@@ -38,17 +35,29 @@ object Wetterfrosch extends StrictLogging {
     }
 
     val trainTestSplit = new TrainTestSplit(timeSeriesLen, trainTestData, seed)
+    val (rnnModel, rnnEvaluations) = trainRnn(trainTestSplit)
+    val (regModel, regEvaluations) = trainRidgeRegression(trainTestSplit)
 
-    train(new MeanSingleValuePredictorTrainer, trainTestSplit)
-    train(new SmileLassoRegressionSingleValueTrainer, trainTestSplit)
-    evalAndLog(new PersistenceModelSingleValuePredictor(targetCol), trainTestSplit)
-    val rnnModel = trainRnn(trainTestSplit)
-    val regModel = trainRidgeRegression(trainTestSplit)
+    val evaluations: Array[Evaluations] = Array(
+      train("Mean", new MeanSingleValuePredictorTrainer, trainTestSplit)._2,
+      train("Lasso", new SmileLassoRegressionSingleValueTrainer, trainTestSplit)._2,
+      eval("Persistence", new PersistenceModelSingleValuePredictor(targetCol), trainTestSplit),
+      rnnEvaluations, regEvaluations
+    )
+
+    println(evaluationsToCsv(evaluations))
 
     makeNicePlots(rnnModel, regModel, plotData)
   }
 
-  def makeNicePlots(rnnModel: SingleValuePredictor, regModel: SingleValuePredictor, plotData: Seq[Map[String, Double]]): Unit = {
+  private def evaluationsToCsv(evaluations: Array[Evaluations]): String = {
+    val header = "Model,MSE Test,MSE Train\n"
+    evaluations
+      .map(ev => f"${ev.name},${ev.test.mse}%.1f, ${ev.train.mse}%.1f")
+      .mkString(header, "\n", "\n")
+  }
+
+  private def makeNicePlots(rnnModel: SingleValuePredictor, regModel: SingleValuePredictor, plotData: Seq[Map[String, Double]]): Unit = {
     val actual = {
       plotData
         .tail
@@ -76,25 +85,25 @@ object Wetterfrosch extends StrictLogging {
     }
   }
 
-  private def evalAndLog(predictor: SingleValuePredictor, trainTestSplit: TrainTestSplit): Unit = {
+  private case class Evaluations(name: String, test: SingleValueRegressionEvaluation, train: SingleValueRegressionEvaluation)
+
+  private def eval(name: String, predictor: SingleValuePredictor, trainTestSplit: TrainTestSplit): Evaluations = {
     val testEvaluation = evaluator.eval(predictor, trainTestSplit.testData)
     val trainEvaluation = evaluator.eval(predictor, trainTestSplit.trainingData)
-    logger.info(s"MSE for $predictor on train data: ${trainEvaluation.mse}")
-    logger.info(s"MSE for $predictor on test data : ${testEvaluation.mse}")
+    Evaluations(name, testEvaluation, trainEvaluation)
   }
 
-  private def train(trainer: SingleValuePredictorTrainer, trainTestSplit: TrainTestSplit): SingleValuePredictor = {
+  private def train(name: String, trainer: SingleValuePredictorTrainer, trainTestSplit: TrainTestSplit): (SingleValuePredictor, Evaluations) = {
     val predictor = trainer.train(trainTestSplit.trainingData, targetCol)
-    evalAndLog(predictor, trainTestSplit)
-    predictor
+    (predictor, eval(name, predictor, trainTestSplit))
   }
 
   private def trainRidgeRegression(trainTestSplit: TrainTestSplit) = {
-    train(new SmileRidgeRegressionTrainer, trainTestSplit)
+    train("Ridge Regression", new SmileRidgeRegressionTrainer, trainTestSplit)
   }
 
   private def trainRnn(trainTestSplit: TrainTestSplit) = {
-    train(new SingleValueOutputRnnTrainer(seed, batchSize), trainTestSplit)
+    train("RNN", new SingleValueOutputRnnTrainer(seed, batchSize), trainTestSplit)
   }
 
   private def cleanData(data: Seq[Map[String, Double]]) = {

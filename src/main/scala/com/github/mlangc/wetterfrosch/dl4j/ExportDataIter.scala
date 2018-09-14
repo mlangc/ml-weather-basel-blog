@@ -1,6 +1,5 @@
 package com.github.mlangc.wetterfrosch.dl4j
 
-import at.lnet.wetterfrosch.ExportDataUtils
 import com.github.mlangc.wetterfrosch.ExportDataUtils
 import com.github.mlangc.wetterfrosch.HistoryExportCols
 import org.nd4j.linalg.api.ndarray.INDArray

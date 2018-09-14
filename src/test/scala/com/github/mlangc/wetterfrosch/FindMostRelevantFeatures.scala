@@ -8,7 +8,6 @@ import _root_.smile.regression.RidgeRegression
 import _root_.smile.validation.CrossValidation
 import _root_.smile.validation.MSE
 import _root_.smile.validation.Validation
-import at.lnet.wetterfrosch.smile.SmileUtils
 import com.github.mlangc.wetterfrosch.smile.SmileUtils
 import com.typesafe.scalalogging.StrictLogging
 

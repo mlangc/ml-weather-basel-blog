@@ -1,7 +1,5 @@
 package com.github.mlangc.wetterfrosch.dl4j
 
-import at.lnet.wetterfrosch.SingleValuePredictor
-import at.lnet.wetterfrosch.SingleValuePredictorTrainer
 import com.github.mlangc.wetterfrosch.SingleValuePredictor
 import com.github.mlangc.wetterfrosch.SingleValuePredictorTrainer
 import com.typesafe.scalalogging.StrictLogging

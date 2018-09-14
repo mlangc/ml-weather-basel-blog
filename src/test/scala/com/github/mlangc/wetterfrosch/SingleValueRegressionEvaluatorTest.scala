@@ -7,7 +7,7 @@ class SingleValueRegressionEvaluatorTest extends FreeSpec {
   private val evaluator = new SingleValueRegressionEvaluator
 
   private class MockPredictor(predictions: Map[Seq[Map[String, Double]], Double]) extends SingleValuePredictor {
-    def predict(seqs: Seq[Seq[Map[String, Double]]])(implicit dummy: DummyImplicit): Seq[Double] = {
+    def predict(seqs: Seq[Seq[Map[String, Double]]]): Seq[Double] = {
       seqs.map(predictions)
     }
 

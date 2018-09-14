@@ -14,7 +14,7 @@ val smileVer = "1.5.1"
 libraryDependencies += "com.github.haifengl" %% "smile-scala" % smileVer
 libraryDependencies += "com.github.haifengl" % "smile-netlib" % smileVer
 
-val evilPlotVer = "0.4.2-SNAPSHOT"
+val evilPlotVer = "0.4.1"
 resolvers += Resolver.bintrayRepo("cibotech", "public")
 libraryDependencies += "com.cibo" %% "evilplot" % evilPlotVer
 libraryDependencies += "com.cibo" %% "evilplot-repl" % evilPlotVer
