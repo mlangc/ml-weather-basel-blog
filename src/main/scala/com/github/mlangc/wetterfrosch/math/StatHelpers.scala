@@ -1,4 +1,4 @@
-package com.github.mlangc.wetterfrosch.custom
+package com.github.mlangc.wetterfrosch.math
 
 object StatHelpers {
   def mean(values: Array[Double]): Double = {

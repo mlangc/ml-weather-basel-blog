@@ -5,7 +5,8 @@ import smile.regression.Regression
 
 class SmileRegressionSingleValuePredictor(model: Regression[Array[Double]],
                                           val targetCol: String,
-                                          toFeatures: Seq[Map[String, Double]] => Array[Double]) extends SingleValuePredictor {
+                                          toFeatures: Seq[Map[String, Double]] => Array[Double])
+  extends SingleValuePredictor {
 
   override def predictOne(seq: Seq[Map[String, Double]]): Double = {
     model.predict(toFeatures(seq))

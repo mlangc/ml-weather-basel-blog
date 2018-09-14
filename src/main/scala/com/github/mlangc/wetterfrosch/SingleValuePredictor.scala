@@ -9,9 +9,7 @@ trait SingleValuePredictor {
   /**
     * Makes a single prediction from a time series
     */
-  def predictOne(seq: Seq[Map[String, Double]]): Double = {
-    predict(Seq(seq)).head
-  }
+  def predictOne(seq: Seq[Map[String, Double]]): Double
 
   /**
     * Makes predictions from multiple time series
