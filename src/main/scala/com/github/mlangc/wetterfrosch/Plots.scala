@@ -11,7 +11,7 @@ import com.cibo.evilplot.plot.renderers.BarRenderer
 import com.cibo.evilplot.plot.renderers.PathRenderer
 
 object Plots {
-  private val csv = new HistoryExportData().csv20180830
+  private val csv = new HistoryExportData().csvDaily
   private val july2018Csv = csv.filter(r => r(Year) == 2018 && r(Month) == 7)
 
   def main(args: Array[String]): Unit = {

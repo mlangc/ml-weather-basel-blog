@@ -6,7 +6,7 @@ import org.scalatest.OptionValues
 class HistoryExportDataTest extends FreeSpec with OptionValues {
   "a few sanity checks" in {
     val data = new HistoryExportData()
-    val csv = data.csv20180830
+    val csv = data.csvDaily
     assert(csv.size > 12000)
     assert(csv.size < 15000)
 
@@ -16,9 +16,10 @@ class HistoryExportDataTest extends FreeSpec with OptionValues {
     assert(firstRow.get(HistoryExportCols.TempDailyMean).value == 0.31)
     assert(firstRow.get(HistoryExportCols.WindGustDailyMin).value == 12.6)
 
-    val lastRow = csv.last
-    assert(lastRow.get(HistoryExportCols.Month).value == 8.0)
-    assert(lastRow.get(HistoryExportCols.Day).value == 30.0)
+    val aug302018 = csv
+      .find(r => r(HistoryExportCols.Year) == 2018 && r(HistoryExportCols.Month) == 8 && r(HistoryExportCols.Day) == 30)
+      .value
+    assert(aug302018(HistoryExportCols.WindGustDailyMin) == 9.36)
 
     val snowButNoPrecipitation = csv.filter { row =>
         val snow = row(HistoryExportCols.SnowfallAmountDaily)

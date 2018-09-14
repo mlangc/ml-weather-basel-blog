@@ -22,7 +22,7 @@ object Wetterfrosch extends StrictLogging {
 
   def main(args: Array[String]): Unit = {
     val exportData = new HistoryExportData()
-    val (trainTestData, plotData) = cleanData(exportData.csv20180830).partition { r =>
+    val (trainTestData, plotData) = cleanData(exportData.csvDaily).partition { r =>
       val year = r(HistoryExportCols.Year)
       lazy val month = r(HistoryExportCols.Month)
       lazy val day = r(HistoryExportCols.Day)

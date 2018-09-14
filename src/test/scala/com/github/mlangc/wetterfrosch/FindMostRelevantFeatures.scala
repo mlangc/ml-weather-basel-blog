@@ -17,7 +17,7 @@ object FindMostRelevantFeatures extends StrictLogging {
 
   def main(args: Array[String]): Unit = {
     val exportData = new HistoryExportData()
-    val trainTestSplit = new TrainTestSplit(1, cleanData(exportData.csv20180830), seed)
+    val trainTestSplit = new TrainTestSplit(1, cleanData(exportData.csvDaily), seed)
     val trainingData = trainTestSplit.trainingData
     val featureNames = trainingData.head.head.keySet
     val sortedFeatureNames = featureNames.toSeq.sorted.toIndexedSeq

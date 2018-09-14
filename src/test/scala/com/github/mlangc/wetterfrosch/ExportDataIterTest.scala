@@ -5,7 +5,7 @@ import org.nd4j.linalg.dataset.DataSet
 import org.scalatest.FreeSpec
 
 class ExportDataIterTest extends FreeSpec {
-  private lazy val csvData = new HistoryExportData().csv20180830
+  private lazy val csvData = new HistoryExportData().csvDaily
   private def batchSize = 32
   private def timeSeriesLen = 14
   private def csvCols = csvData.head.size

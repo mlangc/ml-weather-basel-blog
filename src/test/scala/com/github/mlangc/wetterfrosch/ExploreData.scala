@@ -10,7 +10,7 @@ import com.cibo.evilplot.plot.aesthetics.DefaultTheme._
 
 object ExploreData {
   private val exportData = new HistoryExportData()
-  private def csv20180830 = exportData.csv20180830
+  private def csv20180830 = exportData.csvDaily
 
   def main(args: Array[String]): Unit = {
     displayPlot(dailyMeanTemp)
