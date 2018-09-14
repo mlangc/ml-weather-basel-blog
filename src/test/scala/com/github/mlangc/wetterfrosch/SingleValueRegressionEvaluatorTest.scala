@@ -19,6 +19,8 @@ class SingleValueRegressionEvaluatorTest extends FreeSpec {
     val predictor = new MockPredictor(Map(seq.init -> 1.0))
     val evaluation = evaluator.eval(predictor, Seq(seq))
     assert(evaluation.mse == 0.0)
+    assert(evaluation.mae == 0.0)
+    assert(evaluation.rmse == 0.0)
   }
 
   "eval a single wrong prediction" in {
@@ -26,6 +28,8 @@ class SingleValueRegressionEvaluatorTest extends FreeSpec {
     val predictor = new MockPredictor(Map(seq.init -> -1.0))
     val evaluation = evaluator.eval(predictor, Seq(seq))
     assert(evaluation.mse == 4.0)
+    assert(evaluation.rmse == 2.0)
+    assert(evaluation.mae == 2.0)
   }
 
   "eval two predictions" in {
@@ -34,5 +38,6 @@ class SingleValueRegressionEvaluatorTest extends FreeSpec {
     val predictor = new MockPredictor(Map(seq1.init -> 3, seq2.init -> 4))
     val evaluation = evaluator.eval(predictor, Seq(seq1, seq2))
     assert(evaluation.mse == 12.5)
+    assert(evaluation.mae == 3.5)
   }
 }

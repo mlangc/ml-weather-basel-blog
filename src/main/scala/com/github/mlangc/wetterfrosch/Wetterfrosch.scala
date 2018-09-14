@@ -34,7 +34,7 @@ object Wetterfrosch extends StrictLogging {
       else false
     }
 
-    val trainTestSplit = new TrainTestSplit(timeSeriesLen, trainTestData, seed)
+    val trainTestSplit = new TrainTestSplit(trainTestData, timeSeriesLen, seed)
     val (rnnModel, rnnEvaluations) = trainRnn(trainTestSplit)
     val (regModel, regEvaluations) = trainRidgeRegression(trainTestSplit)
 
@@ -51,9 +51,9 @@ object Wetterfrosch extends StrictLogging {
   }
 
   private def evaluationsToCsv(evaluations: Array[Evaluations]): String = {
-    val header = "Model,MSE Test,MSE Train\n"
+    val header = "Model,RMSE Test,RMSE Train, MAE Test, MAE Train\n"
     evaluations
-      .map(ev => f"${ev.name},${ev.test.mse}%.1f, ${ev.train.mse}%.1f")
+      .map(ev => f"${ev.name},${ev.test.rmse}%.1f, ${ev.train.rmse}%.1f, ${ev.test.mae}%.1f, ${ev.train.mae}%.1f")
       .mkString(header, "\n", "\n")
   }
 

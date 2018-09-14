@@ -1,6 +1,7 @@
 package com.github.mlangc.wetterfrosch
 
 import scala.math.pow
+import scala.math.abs
 
 class SingleValueRegressionEvaluator {
   def eval(predictor: SingleValuePredictor, testData: Seq[Seq[Map[String, Double]]]): SingleValueRegressionEvaluation = {
@@ -10,8 +11,15 @@ class SingleValueRegressionEvaluator {
       predictions.zip(labels).toArray.toSeq
     }
 
+    val n = predictionsWithLabels.size
+
+    def calcMeanCostFromDiffs(costFun: Double => Double): Double = {
+      (predictionsWithLabels.foldLeft(0.0) { case (acc, (p, l)) => acc + costFun(p - l) }) / n
+    }
+
     new SingleValueRegressionEvaluation {
-      lazy val mse = (predictionsWithLabels.foldLeft(0.0) { case (acc, (p, l)) => acc + pow(p - l, 2) }) / predictionsWithLabels.size
+      lazy val mse = calcMeanCostFromDiffs(pow(_, 2))
+      lazy val mae = calcMeanCostFromDiffs(abs)
     }
   }
 }

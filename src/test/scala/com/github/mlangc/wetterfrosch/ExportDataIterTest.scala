@@ -9,7 +9,7 @@ class ExportDataIterTest extends FreeSpec {
   private def batchSize = 32
   private def timeSeriesLen = 14
   private def csvCols = csvData.head.size
-  private lazy val trainTestSplit = new TrainTestSplit(timeSeriesLen, csvData, 0)
+  private lazy val trainTestSplit = new TrainTestSplit(csvData, timeSeriesLen, 0)
 
   "with no data" in {
     val iter = new ExportDataIter(Seq(), true, batchSize)

@@ -3,7 +3,8 @@ package com.github.mlangc.wetterfrosch
 import scala.util.Random
 
 
-class TrainTestSplit(timeSeriesLen: Int, csvData: Seq[Map[String, Double]],
+class TrainTestSplit(csvData: Seq[Map[String, Double]],
+                     timeSeriesLen: Int,
                      seed: Int = 0) {
 
   lazy val (trainingData: Seq[Seq[Map[String, Double]]],
@@ -16,10 +17,10 @@ class TrainTestSplit(timeSeriesLen: Int, csvData: Seq[Map[String, Double]],
     val rng = new Random(seed)
     val timeSeries = rng.shuffle(csvData.sliding(timeSeriesLen + 1, 1)).toArray
 
-    val train: Array[Seq[Map[String, Double]]] = timeSeries.zipWithIndex
-      .filter(forTraining).map(_._1)
-    val test: Array[Seq[Map[String, Double]]] = timeSeries.zipWithIndex
-      .filter(forTest).map(_._1)
+    val train: Array[Seq[Map[String, Double]]] = timeSeries
+      .zipWithIndex.filter(forTraining).map(_._1)
+    val test: Array[Seq[Map[String, Double]]] = timeSeries
+      .zipWithIndex.filter(forTest).map(_._1)
 
     (train.toSeq, test.toSeq)
   }
