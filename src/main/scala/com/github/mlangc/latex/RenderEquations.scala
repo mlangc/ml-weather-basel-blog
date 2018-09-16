@@ -27,23 +27,22 @@ object RenderEquations extends StrictLogging {
         val tmpPdf = new File(texFile.getParent, tmpPdfFileName)
         val tmpPng = new File(texFile.getParent, tmpPngFileName)
 
-        tmpPdf.deleteOnExit()
-        tmpPng.deleteOnExit()
+        try {
+          val magickRes = %%('magick,
+            "-density", "1200", tmpPdfFileName,
+            "-resize", "1400", "-gravity", "South", "-background", "white", "-splice", "0x1",
+            "-background", "black", "-splice", "0x1", "-trim", "+repage", "-chop", "0x1",
+            "-gravity", "North", "-background", "white", "-splice", "0x1",
+            "-background", "black", "-splice", "0x1", "-trim", "+repage", "-chop", "0x1", tmpPngFileName)
 
-        val magickRes = %%('magick,
-          "-density", "1200", tmpPdfFileName,
-          "-resize", "1400", "-gravity", "South", "-background", "white", "-splice", "0x1",
-          "-background", "black", "-splice", "0x1", "-trim", "+repage", "-chop", "0x1",
-          "-gravity", "North", "-background", "white", "-splice", "0x1",
-          "-background", "black", "-splice", "0x1", "-trim", "+repage", "-chop", "0x1", tmpPngFileName)
+          assert(magickRes.exitCode == 0, s"Failed to execute magick: $magickRes")
 
-        assert(magickRes.exitCode == 0, s"Failed to execute magick: $magickRes")
-
-        val targetPng = new File(equationFile.getParent, equationFile.getName.replace(".tex", ".png"))
-        FileUtils.copyFile(tmpPng, targetPng)
-
-        tmpPdf.delete()
-        tmpPng.delete()
+          val targetPng = new File(equationFile.getParent, equationFile.getName.replace(".tex", ".png"))
+          FileUtils.copyFile(tmpPng, targetPng)
+        } finally {
+          tmpPdf.delete()
+          tmpPng.delete()
+        }
       }
     }
   }
