@@ -23,13 +23,13 @@ class HistoryExportDataTest extends FreeSpec with OptionValues {
 
     val snowButNoPrecipitation = csv.filter { row =>
         val snow = row(HistoryExportCols.SnowfallAmountDaily)
-        val precipitation = row(HistoryExportCols.TotalPrecipitationDaily)
+        val precipitation = row(HistoryExportCols.TotalPrecipitationDailySum)
         snow > 0.85 && precipitation <= 0
       }.map { row =>
         (row(HistoryExportCols.Year),
           row(HistoryExportCols.Month),
           row(HistoryExportCols.Day),
-          row(HistoryExportCols.TotalPrecipitationDaily),
+          row(HistoryExportCols.TotalPrecipitationDailySum),
           row(HistoryExportCols.SnowfallAmountDaily))
       }
 

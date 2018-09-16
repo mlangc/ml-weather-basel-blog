@@ -9,7 +9,7 @@ import scala.math.abs
 import com.github.mlangc.wetterfrosch.smile.SmileUtils
 
 object FindMostRelevantFeaturesOld extends StrictLogging {
-  private def targetCol = HistoryExportCols.TotalPrecipitationDaily
+  private def targetCol = HistoryExportCols.TotalPrecipitationDailySum
 
   def main(args: Array[String]): Unit = {
     val exportData = new HistoryExportData()

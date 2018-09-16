@@ -10,6 +10,7 @@
         </encoder>
     </appender>
 
+    <logger name="com.github.mlangc.latex" level="debug"/>
     <logger name="com.github.mlangc.wetterfrosch" level="debug"/>
     <logger name="com.github.mlangc.wetterfrosch.dl4j.SingleValueOutputRnnTrainer" level="info"/>
     <logger name="org.deeplearning4j.optimize.listeners.ScoreIterationListener" level="warn"/>

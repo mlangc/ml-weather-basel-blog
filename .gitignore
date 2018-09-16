@@ -1,6 +1,10 @@
 *.class
 *.log
 .idea
-.jar
+*.jar
+*.pdf
+*.aux
+*.png
 target/
 history*.csv
+out/

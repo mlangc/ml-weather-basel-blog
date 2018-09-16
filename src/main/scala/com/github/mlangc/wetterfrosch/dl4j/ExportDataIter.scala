@@ -90,7 +90,7 @@ class ExportDataIter(timeSeries: Seq[Seq[Map[String, Double]]], lastStepIsOutput
       Nd4j.zeros(slice.size, 1, slice.head.size)
     } else {
       val labels = Nd4j.zeros(slice.size, 1, slice.head.size - 1)
-      val targetValues: Array[Double] = slice.map(_.last(HistoryExportCols.TotalPrecipitationDaily))
+      val targetValues: Array[Double] = slice.map(_.last(HistoryExportCols.TotalPrecipitationDailySum))
 
       for ((v, i) <- targetValues.zipWithIndex) {
         labels.putScalar(i, 0, slice.head.size - 2, v)

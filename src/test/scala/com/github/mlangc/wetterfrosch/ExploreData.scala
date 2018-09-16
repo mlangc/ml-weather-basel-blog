@@ -25,11 +25,11 @@ object ExploreData {
   }
 
   private def dailyPrecipitationHist = {
-    Histogram(csv20180830.map(_.apply(HistoryExportCols.TotalPrecipitationDaily)), bins = 50)
+    Histogram(csv20180830.map(_.apply(HistoryExportCols.TotalPrecipitationDailySum)), bins = 50)
       .xAxis(tickCount = Some(10))
       .yAxis()
       .frame()
-      .xLabel(HistoryExportCols.TotalPrecipitationDaily)
+      .xLabel(HistoryExportCols.TotalPrecipitationDailySum)
   }
 
   private def yearlyMeanTemp = {

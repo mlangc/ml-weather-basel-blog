@@ -45,15 +45,15 @@ def rainSunshineJuly2018: Plot = {
   // This is accomplished by rescaling the precipitation by the factor below.
   // The value is negative, since we want the bars to go down.
   val scale: Double = {
-    val rainMax = july2018Csv.map(_(TotalPrecipitationDaily)).max
-    val sunMax = july2018Csv.map(_(SunshineDurationDaily)).max
+    val rainMax = july2018Csv.map(_(TotalPrecipitationDailySum)).max
+    val sunMax = july2018Csv.map(_(SunshineDurationDailySum)).max
     -sunMax/rainMax
   }
 
   val rain: Seq[Bar] =
-    july2018Csv.map(r => Bar(r(TotalPrecipitationDaily)*scale, r(Day).toInt))
+    july2018Csv.map(r => Bar(r(TotalPrecipitationDailySum)*scale, r(Day).toInt))
   val sunshine: Seq[Bar] =
-    july2018Csv.map(r => Bar(r(SunshineDurationDaily), r(Day).toInt))
+    july2018Csv.map(r => Bar(r(SunshineDurationDailySum), r(Day).toInt))
 
   // When generating labels for the y axis, we have to take into account,
   // that we are actually generating labels for two different metrics depending

@@ -18,7 +18,7 @@ object Wetterfrosch extends StrictLogging {
   private def timeSeriesLen = 1
   private def batchSize = 64
   private val evaluator = new SingleValueRegressionEvaluator
-  private def targetCol: String = HistoryExportCols.TotalPrecipitationDaily
+  private def targetCol: String = HistoryExportCols.TotalPrecipitationDailySum
 
   def main(args: Array[String]): Unit = {
     val exportData = new HistoryExportData()
@@ -53,7 +53,7 @@ object Wetterfrosch extends StrictLogging {
   private def evaluationsToCsv(evaluations: Array[Evaluations]): String = {
     val header = "Model,RMSE Test,RMSE Train, MAE Test, MAE Train\n"
     evaluations
-      .map(ev => f"${ev.name},${ev.test.rmse}%.1f, ${ev.train.rmse}%.1f, ${ev.test.mae}%.1f, ${ev.train.mae}%.1f")
+      .map(ev => f"${ev.name},${ev.test.rmse}%.1fmm, ${ev.train.rmse}%.1fmm, ${ev.test.mae}%.1fmm, ${ev.train.mae}%.1fmm")
       .mkString(header, "\n", "\n")
   }
 
