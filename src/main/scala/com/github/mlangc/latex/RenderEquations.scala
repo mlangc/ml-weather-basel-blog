@@ -19,7 +19,7 @@ object RenderEquations extends StrictLogging {
         import ammonite.ops._
         implicit val wd: Path = Path(texFile.getParentFile)
 
-        val pdfLatexRes = %%('pdflatex, texFile.getName)
+        val pdfLatexRes = %%('pdflatex, "-interaction", "nonstopmode", texFile.getName)
         assert(pdfLatexRes.exitCode == 0, s"Failed to execute pdflatex: $pdfLatexRes")
 
         val tmpPdfFileName = texFile.getName.replace(".tex", ".pdf")
