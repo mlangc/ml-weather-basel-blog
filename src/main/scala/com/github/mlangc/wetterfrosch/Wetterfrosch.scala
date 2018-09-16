@@ -9,8 +9,7 @@ import com.cibo.evilplot.plot.renderers.PointRenderer
 import com.github.mlangc.wetterfrosch.custom.MeanSingleValuePredictorTrainer
 import com.github.mlangc.wetterfrosch.custom.PersistenceModelSingleValuePredictor
 import com.github.mlangc.wetterfrosch.dl4j.SingleValueOutputRnnTrainer
-import com.github.mlangc.wetterfrosch.smile.SmileLassoRegressionSingleValueTrainer
-import com.github.mlangc.wetterfrosch.smile.SmileRidgeRegressionTrainer
+import com.github.mlangc.wetterfrosch.smile.{SmileLassoRegressionSingleValueTrainer, SmileOlsTrainer, SmileRidgeRegressionTrainer}
 import com.typesafe.scalalogging.StrictLogging
 
 object Wetterfrosch extends StrictLogging {
@@ -40,6 +39,7 @@ object Wetterfrosch extends StrictLogging {
 
     val evaluations: Array[Evaluations] = Array(
       train("Mean", new MeanSingleValuePredictorTrainer, trainTestSplit)._2,
+      train("OLS", new SmileOlsTrainer, trainTestSplit)._2,
       train("Lasso", new SmileLassoRegressionSingleValueTrainer, trainTestSplit)._2,
       eval("Persistence", new PersistenceModelSingleValuePredictor(targetCol), trainTestSplit),
       rnnEvaluations, regEvaluations
