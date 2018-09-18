@@ -9,12 +9,12 @@ import com.cibo.evilplot.plot.renderers.PointRenderer
 import com.github.mlangc.wetterfrosch.custom.MeanSingleValuePredictorTrainer
 import com.github.mlangc.wetterfrosch.custom.PersistenceModelSingleValuePredictor
 import com.github.mlangc.wetterfrosch.dl4j.SingleValueOutputRnnTrainer
-import com.github.mlangc.wetterfrosch.smile.{SmileLassoRegressionSingleValueTrainer, SmileOlsTrainer, SmileRidgeRegressionTrainer}
+import com.github.mlangc.wetterfrosch.smile._
 import com.typesafe.scalalogging.StrictLogging
 
 object Wetterfrosch extends StrictLogging {
   private def seed = 42
-  private def timeSeriesLen = 1
+  private def timeSeriesLen = 2
   private def batchSize = 64
   private val evaluator = new SingleValueRegressionEvaluator
   private def targetCol: String = HistoryExportCols.TotalPrecipitationDailySum
@@ -39,9 +39,10 @@ object Wetterfrosch extends StrictLogging {
 
     val evaluations: Array[Evaluations] = Array(
       train("Mean", new MeanSingleValuePredictorTrainer, trainTestSplit)._2,
-      train("OLS", new SmileOlsTrainer, trainTestSplit)._2,
-      train("Lasso", new SmileLassoRegressionSingleValueTrainer, trainTestSplit)._2,
       eval("Persistence", new PersistenceModelSingleValuePredictor(targetCol), trainTestSplit),
+      train(s"Tree-$timeSeriesLen", new SmileRegressionTreeTrainer(3000), trainTestSplit)._2,
+      train(s"Forest-$timeSeriesLen", new SmileGbmRegressionTrainer(500, 30), trainTestSplit)._2,
+      train(s"OLS-$timeSeriesLen", new SmileOlsTrainer, trainTestSplit)._2,
       rnnEvaluations, regEvaluations
     )
 

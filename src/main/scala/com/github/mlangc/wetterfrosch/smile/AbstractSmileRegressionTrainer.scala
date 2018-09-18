@@ -4,9 +4,9 @@ import com.github.mlangc.wetterfrosch.SingleValuePredictor
 import com.github.mlangc.wetterfrosch.SingleValuePredictorTrainer
 import com.github.mlangc.wetterfrosch.smile.SmileUtils.toFeatures
 import com.github.mlangc.wetterfrosch.smile.SmileUtils.toFeaturesWithLabels
-import smile.regression.RegressionTrainer
+import smile.regression.{Regression, RegressionTrainer}
 
-abstract class AbstractSmileRegressionSingleValueTrainer extends
+abstract class AbstractSmileRegressionTrainer extends
   SingleValuePredictorTrainer {
 
   def train(trainingData: Seq[Seq[Map[String, Double]]], targetCol: String)
@@ -14,10 +14,10 @@ abstract class AbstractSmileRegressionSingleValueTrainer extends
     val (trainingFeatures, trainingLabels) =
       toFeaturesWithLabels(trainingData, targetCol)
 
-    val trainer = newTrainer
-    val regression = trainer.train(trainingFeatures, trainingLabels)
+    val regression = trainSmileRegressionModel(trainingFeatures, trainingLabels)
     new SmileRegressionSingleValuePredictor(regression, targetCol, toFeatures)
   }
 
-  protected def newTrainer: RegressionTrainer[Array[Double]]
+  protected def trainSmileRegressionModel(features: Array[Array[Double]],
+                                          labels: Array[Double]): Regression[Array[Double]]
 }
