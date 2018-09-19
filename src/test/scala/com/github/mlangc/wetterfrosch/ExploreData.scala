@@ -8,8 +8,7 @@ import com.cibo.evilplot.plot._
 import com.cibo.evilplot.plot.aesthetics.DefaultTheme._
 
 
-object ExploreData {
-  private val exportData = new HistoryExportData()
+object ExploreData extends ExportDataModule {
   private def csv20180830 = exportData.csvDaily
 
   def main(args: Array[String]): Unit = {
