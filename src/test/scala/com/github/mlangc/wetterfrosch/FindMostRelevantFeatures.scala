@@ -5,7 +5,7 @@ import _root_.smile.regression.RidgeRegression
 import _root_.smile.validation.CrossValidation
 import _root_.smile.validation.RMSE
 import _root_.smile.validation.Validation
-import com.github.mlangc.wetterfrosch.smile.SmileUtils
+import com.github.mlangc.wetterfrosch.smile.DefaultSmileFeaturesExtractor
 import com.typesafe.scalalogging.StrictLogging
 
 import scala.annotation.tailrec
@@ -60,7 +60,7 @@ object FindMostRelevantFeatures extends StrictLogging {
 
     logger.info(s"Working with ${trainingData.size} training examples")
 
-    val (trainFeatures, trainLabels) = SmileUtils.toFeaturesWithLabels(trainingData, targetCol)
+    val (trainFeatures, trainLabels) = DefaultSmileFeaturesExtractor.toFeaturesWithLabels(trainingData, targetCol)
     val cv = new CrossValidation(trainFeatures.length, 25, false)
     val rmseAll = cvRmseWithoutFeatures(cv, trainFeatures, trainLabels, effectiveFeatureNames, Set())
     logger.info(s"$rmseAll <-- all features")

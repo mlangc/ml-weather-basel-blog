@@ -1,22 +1,17 @@
 package com.github.mlangc.wetterfrosch.smile
 
 import com.github.mlangc.wetterfrosch.math.StatHelpers
-import com.github.mlangc.wetterfrosch.{HistoryExportCols, HistoryExportData, TrainTestSplit}
+import com.github.mlangc.wetterfrosch.{ExportDataModule, HistoryExportCols, HistoryExportData, TrainTestSplit}
 import com.typesafe.scalalogging.StrictLogging
 import smile.regression
 import smile.validation.{RMSE, cv}
 
 import scala.math._
 
-object EvaluateNormalization extends StrictLogging {
-  private def timeSeriesLen = 1
-  private def seed = 42
-  private def targetCol = HistoryExportCols.TotalPrecipitationDailySum
-
+object EvaluateNormalization extends ExportDataModule with StrictLogging {
   def main(args: Array[String]): Unit = {
-    val exportData = new HistoryExportData()
     val trainTestSplit = new TrainTestSplit(cleanData(exportData.csvDaily), timeSeriesLen, seed)
-    val (features, labels) = SmileUtils.toFeaturesWithLabels(trainTestSplit.trainingData, targetCol)
+    val (features, labels) = DefaultSmileFeaturesExtractor.toFeaturesWithLabels(trainTestSplit.trainingData, targetCol)
     val featuresNormalized = normalize(features)
 
     val folds = 20

@@ -1,8 +1,6 @@
 package com.github.mlangc.wetterfrosch.smile
 
-import smile.regression.LASSO
+import smile.regression
 
 class SmileLassoRegressionTrainer(lambda: Double = 1.0)
-  extends AbstractSmileRegressionTrainer with SimpleSmileTrainerBasedImpl {
-  protected def newTrainer = new LASSO.Trainer(lambda)
-}
+  extends AbstractSmileRegressionTrainer(regression.lasso(_, _, lambda))

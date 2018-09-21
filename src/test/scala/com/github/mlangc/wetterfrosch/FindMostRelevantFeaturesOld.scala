@@ -6,7 +6,7 @@ import _root_.smile.regression.LASSO
 import com.typesafe.scalalogging.StrictLogging
 import scala.math.abs
 
-import com.github.mlangc.wetterfrosch.smile.SmileUtils
+import com.github.mlangc.wetterfrosch.smile.DefaultSmileFeaturesExtractor
 
 object FindMostRelevantFeaturesOld extends StrictLogging {
   private def targetCol = HistoryExportCols.TotalPrecipitationDailySum
@@ -21,7 +21,7 @@ object FindMostRelevantFeaturesOld extends StrictLogging {
     @tailrec
     def trainAndLogSelectedFeatures(lambda: Double, droppedBefore: Set[String] = Set()): Unit = {
       val trainer = new LASSO.Trainer(lambda)
-      val (features, labels) = SmileUtils.toFeaturesWithLabels(trainingData, targetCol)
+      val (features, labels) = DefaultSmileFeaturesExtractor.toFeaturesWithLabels(trainingData, targetCol)
       val lasso = trainer.train(features, labels)
       val labeledCoeffs = ExportDataUtils.relabel(lasso.coefficients(), keys)
       val selected = labeledCoeffs.filter(c => abs(c._2) > 1e-9).map(_._1).toSet

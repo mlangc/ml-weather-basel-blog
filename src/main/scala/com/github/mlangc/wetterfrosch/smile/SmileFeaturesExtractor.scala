@@ -2,7 +2,7 @@ package com.github.mlangc.wetterfrosch.smile
 
 import com.github.mlangc.wetterfrosch.ExportDataUtils
 
-object SmileUtils {
+trait SmileFeaturesExtractor {
   /** Converts the given training data into a format usable by Smile
     */
   def toFeaturesWithLabels(seqs: Seq[Seq[Map[String, Double]]],

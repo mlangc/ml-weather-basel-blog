@@ -1,6 +1,5 @@
 package com.github.mlangc.wetterfrosch.smile
-import smile.regression.OLS
 
-class SmileOlsTrainer extends AbstractSmileRegressionTrainer with SimpleSmileTrainerBasedImpl {
-  protected def newTrainer = new OLS.Trainer()
-}
+import smile.regression.ols
+
+class SmileOlsTrainer extends AbstractSmileRegressionTrainer(ols(_, _))

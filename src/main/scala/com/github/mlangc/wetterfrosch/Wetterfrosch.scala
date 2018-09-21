@@ -12,16 +12,10 @@ import com.github.mlangc.wetterfrosch.dl4j.SingleValueOutputRnnTrainer
 import com.github.mlangc.wetterfrosch.smile._
 import com.typesafe.scalalogging.StrictLogging
 
-object Wetterfrosch extends StrictLogging {
-  private def seed = 42
-  private def timeSeriesLen = 2
-  private def batchSize = 64
-  private val evaluator = new SingleValueRegressionEvaluator
-  private def targetCol: String = HistoryExportCols.TotalPrecipitationDailySum
-
+object Wetterfrosch extends ExportDataModule with StrictLogging {
   def main(args: Array[String]): Unit = {
     val exportData = new HistoryExportData()
-    val (trainTestData, plotData) = cleanData(exportData.csvDaily).partition { r =>
+    val (trainTestData, plotData) = exportData.csvDaily.partition { r =>
       val year = r(HistoryExportCols.Year)
       lazy val month = r(HistoryExportCols.Month)
       lazy val day = r(HistoryExportCols.Day)
@@ -105,11 +99,5 @@ object Wetterfrosch extends StrictLogging {
 
   private def trainRnn(trainTestSplit: TrainTestSplit) = {
     train("RNN", new SingleValueOutputRnnTrainer(seed, batchSize), trainTestSplit)
-  }
-
-  private def cleanData(data: Seq[Map[String, Double]]) = {
-    data.map { row =>
-      row - HistoryExportCols.Hour - HistoryExportCols.Minute
-    }
   }
 }
