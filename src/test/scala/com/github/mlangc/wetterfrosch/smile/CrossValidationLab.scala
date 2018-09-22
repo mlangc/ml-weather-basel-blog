@@ -1,25 +1,19 @@
 package com.github.mlangc.wetterfrosch.smile
 
-import com.github.mlangc.wetterfrosch.{ExportDataModule, TrainTestSplit}
-import com.typesafe.scalalogging.StrictLogging
-import smile.regression
-import smile.validation
-import smile.validation.RMSE
-import smile.math.Math
 import com.cibo.evilplot._
-import com.cibo.evilplot.colors.HTMLNamedColors.{blue, green}
-import com.cibo.evilplot.colors.{Color, HTMLNamedColors}
+import com.cibo.evilplot.colors.Color
 import com.cibo.evilplot.numeric.Point
 import com.cibo.evilplot.plot._
 import com.cibo.evilplot.plot.aesthetics.DefaultTheme._
 import com.cibo.evilplot.plot.renderers.PathRenderer
+import com.typesafe.scalalogging.StrictLogging
+import smile.math.Math
+import smile.regression
 import smile.regression.Regression
+import smile.validation
+import smile.validation.RMSE
 
-object CrossValidationLab extends ExportDataModule with StrictLogging {
-  private lazy val trainTestSplit = new TrainTestSplit(exportData.csvDaily, timeSeriesLen, seed)
-  private lazy val (trainFeatures, trainLabels) = DefaultSmileFeaturesExtractor.toFeaturesWithLabels(trainTestSplit.trainingData, targetCol)
-  private lazy val (testFeatures, testLabels) = DefaultSmileFeaturesExtractor.toFeaturesWithLabels(trainTestSplit.testData, targetCol)
-
+object CrossValidationLab extends SmileLabModule with StrictLogging {
   private case class Metrics(rmse: Double, mae: Double)
 
   def main(args: Array[String]): Unit = {

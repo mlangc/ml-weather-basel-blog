@@ -12,9 +12,14 @@ import com.github.mlangc.wetterfrosch.dl4j.SingleValueOutputRnnTrainer
 import com.github.mlangc.wetterfrosch.smile._
 import com.typesafe.scalalogging.StrictLogging
 
+import _root_.smile.math.Math
+
 object Wetterfrosch extends ExportDataModule with StrictLogging {
+  override def timeSeriesLen: Int = 1
+
   def main(args: Array[String]): Unit = {
-    val exportData = new HistoryExportData()
+    Math.setSeed(seed)
+
     val (trainTestData, plotData) = exportData.csvDaily.partition { r =>
       val year = r(HistoryExportCols.Year)
       lazy val month = r(HistoryExportCols.Month)
@@ -28,21 +33,21 @@ object Wetterfrosch extends ExportDataModule with StrictLogging {
     }
 
     val trainTestSplit = new TrainTestSplit(trainTestData, timeSeriesLen, seed)
-    val (rnnModel, rnnEvaluations) = trainRnn(trainTestSplit)
-    val (regModel, regEvaluations) = trainRidgeRegression(trainTestSplit)
+    //val (rnnModel, rnnEvaluations) = trainRnn(trainTestSplit)
+    //val (regModel, regEvaluations) = trainRidgeRegression(trainTestSplit)
 
     val evaluations: Array[Evaluations] = Array(
       train("Mean", new MeanSingleValuePredictorTrainer, trainTestSplit)._2,
       eval("Persistence", new PersistenceModelSingleValuePredictor(targetCol), trainTestSplit),
-      train(s"Tree-$timeSeriesLen", new SmileRegressionTreeTrainer(3000), trainTestSplit)._2,
-      train(s"Forest-$timeSeriesLen", new SmileGbmRegressionTrainer(500, 30), trainTestSplit)._2,
+      //train(s"Tree-$timeSeriesLen", new SmileRegressionTreeTrainer(3000), trainTestSplit)._2,
+      //train(s"Forest-$timeSeriesLen", new SmileGbmRegressionTrainer(500, 30), trainTestSplit)._2,
       train(s"OLS-$timeSeriesLen", new SmileOlsTrainer, trainTestSplit)._2,
-      rnnEvaluations, regEvaluations
+      //rnnEvaluations, regEvaluations
     )
 
     println(evaluationsToCsv(evaluations))
 
-    makeNicePlots(rnnModel, regModel, plotData)
+    //makeNicePlots(rnnModel, regModel, plotData)
   }
 
   private def evaluationsToCsv(evaluations: Array[Evaluations]): String = {

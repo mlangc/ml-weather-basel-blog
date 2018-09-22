@@ -1,25 +1,23 @@
 package com.github.mlangc.wetterfrosch.smile
 
 import com.github.mlangc.wetterfrosch.math.StatHelpers
-import com.github.mlangc.wetterfrosch.{ExportDataModule, HistoryExportCols, HistoryExportData, TrainTestSplit}
 import com.typesafe.scalalogging.StrictLogging
 import smile.regression
-import smile.validation.{RMSE, cv}
+import smile.validation.RMSE
+import smile.validation.cv
 
 import scala.math._
 
-object EvaluateNormalization extends ExportDataModule with StrictLogging {
+object EvaluateNormalization extends SmileLabModule with StrictLogging {
   def main(args: Array[String]): Unit = {
-    val trainTestSplit = new TrainTestSplit(cleanData(exportData.csvDaily), timeSeriesLen, seed)
-    val (features, labels) = DefaultSmileFeaturesExtractor.toFeaturesWithLabels(trainTestSplit.trainingData, targetCol)
-    val featuresNormalized = normalize(features)
+    val featuresNormalized = normalize(trainFeatures)
 
     val folds = 20
     val nFolds = 30
 
-    val results: Seq[(Double, Double)] = Seq(features, featuresNormalized).map { features =>
+    val results: Seq[(Double, Double)] = Seq(trainFeatures, featuresNormalized).map { features =>
       val rmses = 1.to(folds).map { _ =>
-        cv(features, labels, nFolds, new RMSE())(regression.ols(_, _))(0)
+        cv(features, trainLabels, nFolds, new RMSE())(regression.ols(_, _))(0)
       }
 
       val z = 1.96
@@ -50,11 +48,4 @@ object EvaluateNormalization extends ExportDataModule with StrictLogging {
       }
     }
   }
-
-  private def cleanData(data: Seq[Map[String, Double]]) = {
-    data.map { row =>
-      row - HistoryExportCols.Hour - HistoryExportCols.Minute
-    }
-  }
-
 }
