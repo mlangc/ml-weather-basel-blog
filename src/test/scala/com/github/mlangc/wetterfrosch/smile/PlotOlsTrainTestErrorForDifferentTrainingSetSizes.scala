@@ -25,8 +25,8 @@ object PlotOlsTrainTestErrorForDifferentTrainingSetSizes
       trainSetSizes.par.flatMap { trainSetSize =>
         try {
           val currentTrainFeatures = trainFeatures.take(trainSetSize)
-          val currentTrainLabls = trainLabels.take(trainSetSize)
-          trainAndEvaluateOls(currentTrainFeatures, currentTrainLabls)
+          val currentTrainLabels = trainLabels.take(trainSetSize)
+          trainAndEvaluateOls(currentTrainFeatures, currentTrainLabels)
         } catch {
           case e: IllegalArgumentException =>
             logger.warn(s"Skipping train set size $trainSetSize", e)
