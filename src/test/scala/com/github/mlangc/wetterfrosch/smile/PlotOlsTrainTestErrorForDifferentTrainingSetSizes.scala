@@ -14,17 +14,12 @@ import smile.validation
 object PlotOlsTrainTestErrorForDifferentTrainingSetSizes
   extends SmileLabModule with StrictLogging {
 
-  override def timeSeriesLen: Int = 1
+  override def timeSeriesLen: Int = 3
+  override def seed: Int = 0xCAFEBABE
 
   def main(args: Array[String]): Unit = {
-    val trainSetSizes: Array[Int] = {
-      val base = Array(250, 500, 1000,
-        2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, trainLabels.size)
-
-      if (timeSeriesLen == 1) base
-      else if (timeSeriesLen == 2) base.drop(2)
-      else base.drop(3)
-    }
+    val trainSetSizes = Array(
+      250, 500, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, trainLabels.size)
 
     val (trainRmses: Seq[Point], testRmses: Seq[Point]) = {
       trainSetSizes.par.flatMap { trainSetSize =>
@@ -45,16 +40,27 @@ object PlotOlsTrainTestErrorForDifferentTrainingSetSizes
     }
 
     val plot = Overlay(
-      XyPlot(trainRmses, pathRenderer = namedRenderer("train", blue)),
-      XyPlot(testRmses, pathRenderer = namedRenderer("test", red))
+      XyPlot(dropExtremes(trainRmses), pathRenderer = namedRenderer("train", blue)),
+      XyPlot(dropExtremes(testRmses), pathRenderer = namedRenderer("test", red))
     ).xLabel("Training set size")
       .yLabel("RMSE")
       .xAxis(tickCount = Some(trainSetSizes.size))
       .yAxis(tickCount = Some(10))
-      .title(s"Train/Test Error OLS-$timeSeriesLen")
+      .title(s"Train/Test Error OLS-$timeSeriesLen (seed = $seed)")
       .overlayLegend()
 
     displayPlot(plot)
+  }
+
+  private def dropExtremes(points: Seq[Point]): Seq[Point] = {
+    points.filter { point =>
+      if (point._2 > 6) {
+        logger.warn(s"Filtering out $point")
+        false
+      } else {
+        true
+      }
+    }
   }
 
   private def trainAndEvaluateOls(currentTrainFeatures: Array[Array[Double]],
