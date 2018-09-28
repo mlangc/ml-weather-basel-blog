@@ -33,7 +33,7 @@ object Wetterfrosch extends ExportDataModule with StrictLogging {
       else false
     }
 
-    val trainTestSplit = new TrainTestSplit(trainTestData, timeSeriesLen, seed)
+    val trainTestSplit = new TrainTestSplit(labeledDataAssembler.assemblyDailyData(timeSeriesLen), seed)
     val (rnnModel, rnnEvaluations) = trainRnn(trainTestSplit)
     val (regModel, regEvaluations) = trainRidgeRegression(trainTestSplit)
 

@@ -2,7 +2,6 @@ package com.github.mlangc.wetterfrosch.smile
 
 import com.cibo.evilplot._
 import com.cibo.evilplot.colors.Color
-import com.cibo.evilplot.colors.HTMLNamedColors
 import com.cibo.evilplot.colors.HTMLNamedColors.blue
 import com.cibo.evilplot.colors.HTMLNamedColors.green
 import com.cibo.evilplot.colors.HTMLNamedColors.red

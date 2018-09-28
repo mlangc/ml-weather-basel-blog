@@ -5,15 +5,17 @@ import org.nd4j.linalg.dataset.DataSet
 import org.scalatest.FreeSpec
 
 class ExportDataIterTest extends FreeSpec {
-  private lazy val csvData = new HistoryExportData().csvDaily
+  private lazy val exportData = new HistoryExportData()
+  private def csvData = exportData.csvDaily
   private def batchSize = 32
   private def timeSeriesLen = 14
-  private def csvCols = csvData.head.size
-  private lazy val trainTestSplit = new TrainTestSplit(csvData, timeSeriesLen, 0)
+  private def csvCols = exportData.csvDaily.head.size
+  private lazy val labeledDataAssembler = new LabeledDataAssembler(exportData)
+  private lazy val trainTestSplit = new TrainTestSplit(labeledDataAssembler.assemblyDailyData(timeSeriesLen), 0)
 
   "with no data" in {
     val iter = new ExportDataIter(Seq(), true, batchSize)
-    assert(iter.hasNext == false)
+    assert(!iter.hasNext)
   }
 
   "with csv data" in {

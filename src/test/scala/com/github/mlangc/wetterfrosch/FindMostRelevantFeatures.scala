@@ -41,7 +41,8 @@ object FindMostRelevantFeatures extends StrictLogging {
 
   def main(args: Array[String]): Unit = {
     val exportData = new HistoryExportData()
-    val trainTestSplit = new TrainTestSplit(cleanData(exportData.csvDaily), timeSeriesLen, seed)
+    val labeledDataAssembler = new LabeledDataAssembler(exportData)
+    val trainTestSplit = new TrainTestSplit(labeledDataAssembler.assemblyDailyData(timeSeriesLen), seed)
     val trainingData = trainTestSplit.trainingData
     val featureNames = trainingData.head.head.keySet
     val sortedFeatureNames = featureNames.toSeq.sorted.toIndexedSeq
@@ -172,7 +173,7 @@ object FindMostRelevantFeatures extends StrictLogging {
         }
 
         val nFeaturesToDrop = sortedFeatureNames.length - nFeatures
-        val featureIndicesToDrop = rng.shuffle(0.until(sortedFeatureNames.length): Seq[Int]).take(nFeaturesToDrop)
+        val featureIndicesToDrop = rng.shuffle(sortedFeatureNames.indices: Seq[Int]).take(nFeaturesToDrop)
         val featuresToDrop = featureIndicesToDrop.map(sortedFeatureNames).toSet
         val rmse = cvRmseWithoutFeatures(cv, features, labels, sortedFeatureNames, featuresToDrop)
 
