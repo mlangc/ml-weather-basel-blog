@@ -5,6 +5,8 @@
 *.pdf
 *.aux
 *.png
+*.swp
+.DS_Store
 target/
 history*.csv
 out/
