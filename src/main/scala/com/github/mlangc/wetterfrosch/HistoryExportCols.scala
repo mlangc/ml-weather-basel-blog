@@ -13,6 +13,7 @@ object HistoryExportCols {
   val WindGustDailyMin = "Wind Gust daily min [sfc]"
   val TotalPrecipitationDailySum = "Total Precipitation daily sum [sfc]"
   val SnowfallAmountDaily = "Snowfall amount raw daily sum [sfc]"
+  val SnowfallAmount = "Snowfall amount raw  [sfc]"
   val SunshineDurationDailySum = "Sunshine Duration daily sum [sfc]"
   val SunshineDuration = "Sunshine Duration  [sfc]"
 

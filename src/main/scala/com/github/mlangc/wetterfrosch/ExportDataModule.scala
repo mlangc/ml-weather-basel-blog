@@ -4,7 +4,6 @@ import com.softwaremill.macwire.wire
 
 trait ExportDataModule {
   def seed = 42
-  def timeSeriesLen = 2
   def batchSize = 64
 
   def targetCol: String = HistoryExportCols.TotalPrecipitationDailySum

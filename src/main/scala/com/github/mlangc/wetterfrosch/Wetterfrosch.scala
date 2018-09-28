@@ -1,54 +1,55 @@
 package com.github.mlangc.wetterfrosch
 
+import java.time.LocalDate
+
+import _root_.smile.math.Math
 import com.cibo.evilplot.colors.HTMLNamedColors
 import com.cibo.evilplot.displayPlot
 import com.cibo.evilplot.numeric.Point
-import com.cibo.evilplot.plot.{Overlay, ScatterPlot}
 import com.cibo.evilplot.plot.aesthetics.DefaultTheme._
 import com.cibo.evilplot.plot.renderers.PointRenderer
+import com.cibo.evilplot.plot.Overlay
+import com.cibo.evilplot.plot.ScatterPlot
 import com.github.mlangc.wetterfrosch.custom.MeanSingleValuePredictorTrainer
-import com.github.mlangc.wetterfrosch.custom.PersistenceModelSingleValuePredictor
 import com.github.mlangc.wetterfrosch.dl4j.SingleValueOutputRnnTrainer
 import com.github.mlangc.wetterfrosch.smile._
 import com.typesafe.scalalogging.StrictLogging
 
-import _root_.smile.math.Math
-
 object Wetterfrosch extends ExportDataModule with StrictLogging {
-  override def timeSeriesLen: Int = 1
-
   def main(args: Array[String]): Unit = {
+    val timeSeriesLen: Int = 3
+    val useHourlyData = true
+    val hourlyDataStepSize = 4
+
     Math.setSeed(seed)
 
-    val exportData = new HistoryExportData()
-    val (trainTestData, plotData) = exportData.csvDaily.partition { r =>
-      val year = r(HistoryExportCols.Year)
-      lazy val month = r(HistoryExportCols.Month)
-      lazy val day = r(HistoryExportCols.Day)
-
-      if (year < 2018) true
-      else if (month < 7) true
-      else if (month == 7 && day < 31) true
-      else if (month > 8) throw new AssertionError(s"Unexpected month $month")
-      else false
+    val labeledData = {
+      if (useHourlyData)
+        labeledDataAssembler.assembleHourlyData(timeSeriesLen, hourlyDataStepSize)
+      else
+        labeledDataAssembler.assemblyDailyData(timeSeriesLen)
     }
 
-    val trainTestSplit = new TrainTestSplit(labeledDataAssembler.assemblyDailyData(timeSeriesLen), seed)
-    val (rnnModel, rnnEvaluations) = trainRnn(trainTestSplit)
+    val (trainTestData, plotData) = labeledData.partition { rs =>
+      val date = ExportDataUtils.localDateFrom(rs.last)
+      date.isBefore(LocalDate.of(2018, 7, 31))
+    }
+
+    val trainTestSplit = new TrainTestSplit(trainTestData, seed)
+    //val (rnnModel, rnnEvaluations) = trainRnn(trainTestSplit)
     val (regModel, regEvaluations) = trainRidgeRegression(trainTestSplit)
 
     val evaluations: Array[Evaluations] = Array(
       train("Mean", new MeanSingleValuePredictorTrainer, trainTestSplit)._2,
-      eval("Persistence", new PersistenceModelSingleValuePredictor(targetCol), trainTestSplit),
-      train(s"Tree-$timeSeriesLen", new SmileRegressionTreeTrainer(20), trainTestSplit)._2,
-      train(s"Forest-$timeSeriesLen", new SmileGbmRegressionTrainer(500, 20), trainTestSplit)._2,
-      train(s"OLS-$timeSeriesLen", new SmileOlsTrainer, trainTestSplit)._2,
-      rnnEvaluations, regEvaluations
+      train(s"Tree-$timeSeriesLen", new SmileRegressionTreeTrainer(10), trainTestSplit)._2,
+      //train(s"Forest-$timeSeriesLen", new SmileGbmRegressionTrainer(500, 20), trainTestSplit)._2,
+      //train(s"OLS-$timeSeriesLen", new SmileOlsTrainer, trainTestSplit)._2,
+      regEvaluations
     )
 
     println(evaluationsToCsv(evaluations))
 
-    makeNicePlots(rnnModel, regModel, plotData)
+    //makeNicePlots(rnnModel, regModel, plotData)
   }
 
   private def evaluationsToCsv(evaluations: Array[Evaluations]): String = {
