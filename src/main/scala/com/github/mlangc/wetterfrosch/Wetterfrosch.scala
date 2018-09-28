@@ -40,8 +40,8 @@ object Wetterfrosch extends ExportDataModule with StrictLogging {
     val evaluations: Array[Evaluations] = Array(
       train("Mean", new MeanSingleValuePredictorTrainer, trainTestSplit)._2,
       eval("Persistence", new PersistenceModelSingleValuePredictor(targetCol), trainTestSplit),
-      train(s"Tree-$timeSeriesLen", new SmileRegressionTreeTrainer(3000), trainTestSplit)._2,
-      train(s"Forest-$timeSeriesLen", new SmileGbmRegressionTrainer(500, 30), trainTestSplit)._2,
+      train(s"Tree-$timeSeriesLen", new SmileRegressionTreeTrainer(20), trainTestSplit)._2,
+      train(s"Forest-$timeSeriesLen", new SmileGbmRegressionTrainer(500, 20), trainTestSplit)._2,
       train(s"OLS-$timeSeriesLen", new SmileOlsTrainer, trainTestSplit)._2,
       rnnEvaluations, regEvaluations
     )
