@@ -2,13 +2,18 @@ package com.github.mlangc.wetterfrosch.smile
 
 import com.cibo.evilplot._
 import com.cibo.evilplot.colors.Color
+import com.cibo.evilplot.colors.HTMLNamedColors.black
 import com.cibo.evilplot.colors.HTMLNamedColors.blue
-import com.cibo.evilplot.colors.HTMLNamedColors.green
 import com.cibo.evilplot.colors.HTMLNamedColors.red
+import com.cibo.evilplot.geometry.Disc
+import com.cibo.evilplot.geometry.Drawable
+import com.cibo.evilplot.geometry.Extent
 import com.cibo.evilplot.numeric.Point
 import com.cibo.evilplot.plot._
 import com.cibo.evilplot.plot.aesthetics.DefaultTheme._
+import com.cibo.evilplot.plot.aesthetics.Theme
 import com.cibo.evilplot.plot.renderers.PathRenderer
+import com.cibo.evilplot.plot.renderers.PointRenderer
 import com.typesafe.scalalogging.StrictLogging
 import smile.math.Math
 import smile.regression
@@ -17,7 +22,7 @@ import smile.validation
 import smile.validation.MeanAbsoluteDeviation
 import smile.validation.RMSE
 
-object CrossValidationLab extends SmileLabModule with StrictLogging {
+object CartCrossValidationLab extends SmileLabModule with StrictLogging {
   override def timeSeriesLen: Int = 1
   override def seed: Int = 42
 
@@ -31,7 +36,7 @@ object CrossValidationLab extends SmileLabModule with StrictLogging {
   def main(args: Array[String]): Unit = {
     Math.setSeed(seed)
 
-    val cartMetrics = cvCarts(2.to(100, 4), 10, 5)
+    val cartMetrics = cvCarts(2.to(50, 1), 10, 10)
     val best = cartMetrics.minBy(_._2.cv.rmse)._1
 
     cartMetrics.foreach { case (maxNode, metrics) =>
@@ -95,11 +100,32 @@ object CrossValidationLab extends SmileLabModule with StrictLogging {
       Some(PathRenderer.named(name, color = color))
     }
 
+    def cvPointRenderer(implicit theme: Theme): Some[PointRenderer] = {
+      val minRmseIndex = cvRmses.zipWithIndex.minBy(_._1._2)._2
+
+      Some {
+        new PointRenderer {
+          override def legendContext: LegendContext = LegendContext.empty
+
+          def render(plot: Plot, extent: Extent, index: Int): Drawable = {
+            val size = {
+              if (index != minRmseIndex) theme.elements.pointSize
+              else theme.elements.pointSize * 3
+            }
+
+            if (index == minRmseIndex) Disc.centered(size).filled(black) behind Disc.centered(size/2).filled(red)
+            else Disc.centered(size).filled(black)
+
+          }
+        }
+      }
+    }
+
     val plot =
       Overlay(
-          XyPlot(cvRmses, pathRenderer = namedRenderer("CV RMSE", red)),
-          XyPlot(trainRmses, pathRenderer = namedRenderer("Train RMSE", blue)),
-          XyPlot(testRmses, pathRenderer = namedRenderer("Test RMSE", green))
+          XyPlot(cvRmses, pathRenderer = namedRenderer("CV RMSE", red), pointRenderer = cvPointRenderer),
+          XyPlot(trainRmses, pathRenderer = namedRenderer("Train RMSE", blue))
+          //XyPlot(testRmses, pathRenderer = namedRenderer("Test RMSE", green))
         ).xAxis(tickCount = Some(cartMetrics.size))
         .yAxis(tickCount = Some(5))
         .frame()
