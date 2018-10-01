@@ -17,8 +17,8 @@ import com.typesafe.scalalogging.StrictLogging
 
 object Wetterfrosch extends ExportDataModule with StrictLogging {
   def main(args: Array[String]): Unit = {
-    val timeSeriesLen: Int = 3
-    val useHourlyData = true
+    val timeSeriesLen: Int = 1
+    val useHourlyData = false
     val hourlyDataStepSize = 4
 
     Math.setSeed(seed)
@@ -37,14 +37,14 @@ object Wetterfrosch extends ExportDataModule with StrictLogging {
 
     val trainTestSplit = new TrainTestSplit(trainTestData, seed)
     //val (rnnModel, rnnEvaluations) = trainRnn(trainTestSplit)
-    val (regModel, regEvaluations) = trainRidgeRegression(trainTestSplit)
+    //val (regModel, regEvaluations) = trainRidgeRegression(trainTestSplit)
 
     val evaluations: Array[Evaluations] = Array(
       train("Mean", new MeanSingleValuePredictorTrainer, trainTestSplit)._2,
-      train(s"Tree-$timeSeriesLen", new SmileRegressionTreeTrainer(10), trainTestSplit)._2,
+      train(s"Tree-$timeSeriesLen", new SmileRegressionTreeTrainer(4), trainTestSplit)._2,
       //train(s"Forest-$timeSeriesLen", new SmileGbmRegressionTrainer(500, 20), trainTestSplit)._2,
       //train(s"OLS-$timeSeriesLen", new SmileOlsTrainer, trainTestSplit)._2,
-      regEvaluations
+      //regEvaluations
     )
 
     println(evaluationsToCsv(evaluations))
