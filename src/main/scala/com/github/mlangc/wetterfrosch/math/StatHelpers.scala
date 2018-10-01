@@ -9,6 +9,10 @@ object StatHelpers {
     values.sum / values.size
   }
 
+  def mean(values: Seq[Double]): Double = {
+    mean(values.toArray)
+  }
+
   def median(values: Array[Double]): Double = {
     val valuesSorted = values.sorted
     if (valuesSorted.size % 2 != 0) {

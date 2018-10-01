@@ -3,6 +3,7 @@ package com.github.mlangc.wetterfrosch
 import java.time.LocalDate
 
 import _root_.smile.math.Math
+import at.ipsquare.commons.core.util.{PerformanceLogFormatter, PerformanceLogger}
 import com.cibo.evilplot.colors.HTMLNamedColors
 import com.cibo.evilplot.displayPlot
 import com.cibo.evilplot.numeric.Point
@@ -16,48 +17,54 @@ import com.github.mlangc.wetterfrosch.smile._
 import com.typesafe.scalalogging.StrictLogging
 
 object Wetterfrosch extends ExportDataModule with StrictLogging {
+  private val numFolds = 25
+  private val nCvRuns = 50
+
   def main(args: Array[String]): Unit = {
-    val timeSeriesLen: Int = 9
-    val useHourlyData = false
-    val hourlyDataStepSize = 4
+    PerformanceLogger.timedExec { () =>
+      val timeSeriesLen: Int = 1
+      val useHourlyData = false
+      val hourlyDataStepSize = 4
 
-    Math.setSeed(seed)
+      Math.setSeed(seed)
 
-    val labeledData = {
-      if (useHourlyData)
-        labeledDataAssembler.assembleHourlyData(timeSeriesLen, hourlyDataStepSize)
-      else
-        labeledDataAssembler.assemblyDailyData(timeSeriesLen)
+      val labeledData = {
+        if (useHourlyData)
+          labeledDataAssembler.assembleHourlyData(timeSeriesLen, hourlyDataStepSize)
+        else
+          labeledDataAssembler.assemblyDailyData(timeSeriesLen)
+      }
+
+      val (trainTestData, plotData) = labeledData.partition { rs =>
+        val date = ExportDataUtils.localDateFrom(rs.last)
+        date.isBefore(LocalDate.of(2018, 7, 31))
+      }
+
+      val trainTestSplit = new TrainTestSplit(trainTestData, seed)
+      //val (rnnModel, rnnEvaluations) = trainRnn(trainTestSplit)
+      //val (regModel, regEvaluations) = trainRidgeRegression(trainTestSplit)
+
+      val smileFeaturesExtractor = DefaultSmileFeaturesExtractor
+
+      val evaluations: Array[Evaluations] = Array(
+        train("Mean", new MeanSingleValuePredictorTrainer, trainTestSplit)._2,
+        train(s"Tree-$timeSeriesLen", new SmileRegressionTreeTrainer(23, smileFeaturesExtractor), trainTestSplit)._2,
+        //train(s"Forest-$timeSeriesLen", new SmileGbmRegressionTrainer(500, 20), trainTestSplit)._2,
+        train(s"OLS-$timeSeriesLen", new SmileOlsTrainer(smileFeaturesExtractor), trainTestSplit)._2,
+        //regEvaluations
+      )
+
+      println(evaluationsToCsv(evaluations))
+      //makeNicePlots(rnnModel, regModel, plotData)
+      Unit
     }
 
-    val (trainTestData, plotData) = labeledData.partition { rs =>
-      val date = ExportDataUtils.localDateFrom(rs.last)
-      date.isBefore(LocalDate.of(2018, 7, 31))
-    }
-
-    val trainTestSplit = new TrainTestSplit(trainTestData, seed)
-    //val (rnnModel, rnnEvaluations) = trainRnn(trainTestSplit)
-    //val (regModel, regEvaluations) = trainRidgeRegression(trainTestSplit)
-
-    val smileFeaturesExtractor = new SelectedColsSmileFeaturesExtractor(HistoryExportColSubsets.ColsForLast9DaysFromTree100)
-
-    val evaluations: Array[Evaluations] = Array(
-      train("Mean", new MeanSingleValuePredictorTrainer, trainTestSplit)._2,
-      train(s"Tree-$timeSeriesLen", new SmileRegressionTreeTrainer(23, smileFeaturesExtractor), trainTestSplit)._2,
-      //train(s"Forest-$timeSeriesLen", new SmileGbmRegressionTrainer(500, 20), trainTestSplit)._2,
-      train(s"OLS-$timeSeriesLen", new SmileOlsTrainer(smileFeaturesExtractor), trainTestSplit)._2,
-      //regEvaluations
-    )
-
-    println(evaluationsToCsv(evaluations))
-
-    //makeNicePlots(rnnModel, regModel, plotData)
   }
 
   private def evaluationsToCsv(evaluations: Array[Evaluations]): String = {
-    val header = "Model,RMSE Test,RMSE Train, MAE Test, MAE Train\n"
+    val header = "Model,RMSE Test,RMSE Train, MAE Test, MAE Train, RMSE Cv, MAE Cv\n"
     evaluations
-      .map(ev => f"${ev.name},${ev.test.rmse}%.1fmm, ${ev.train.rmse}%.1fmm, ${ev.test.mae}%.1fmm, ${ev.train.mae}%.1fmm")
+      .map(ev => f"${ev.name},${ev.test.rmse}%.1fmm, ${ev.train.rmse}%.1fmm, ${ev.test.mae}%.1fmm, ${ev.train.mae}%.1fmm, ${ev.cv.rmse}%.1fmm, ${ev.cv.mae}%.1fmm")
       .mkString(header, "\n", "\n")
   }
 
@@ -89,17 +96,22 @@ object Wetterfrosch extends ExportDataModule with StrictLogging {
     }
   }
 
-  private case class Evaluations(name: String, test: SingleValueRegressionEvaluation, train: SingleValueRegressionEvaluation)
+  private case class Evaluations(name: String,
+                                 test: SingleValueRegressionEvaluation,
+                                 train: SingleValueRegressionEvaluation,
+                                 cv: SingleValueRegressionEvaluation)
 
-  private def eval(name: String, predictor: SingleValuePredictor, trainTestSplit: TrainTestSplit): Evaluations = {
+  private def train[TrainerType <: SingleValuePredictorTrainer](name: String,
+                                                                trainer: TrainerType,
+                                                                trainTestSplit: TrainTestSplit)
+                                                               (implicit crossValidator: CrossValidator[TrainerType])
+  : (SingleValuePredictor, Evaluations) = {
+    val cvEvaluation = crossValidator.crossValidate(trainer, trainTestSplit.trainingData, targetCol, numFolds, nCvRuns)
+    val predictor = trainer.train(trainTestSplit.trainingData, targetCol)
     val testEvaluation = evaluator.eval(predictor, trainTestSplit.testData)
     val trainEvaluation = evaluator.eval(predictor, trainTestSplit.trainingData)
-    Evaluations(name, testEvaluation, trainEvaluation)
-  }
-
-  private def train(name: String, trainer: SingleValuePredictorTrainer, trainTestSplit: TrainTestSplit): (SingleValuePredictor, Evaluations) = {
-    val predictor = trainer.train(trainTestSplit.trainingData, targetCol)
-    (predictor, eval(name, predictor, trainTestSplit))
+    val evaluations = Evaluations(name, testEvaluation, trainEvaluation, cvEvaluation)
+    (predictor, evaluations)
   }
 
   private def trainRidgeRegression(trainTestSplit: TrainTestSplit) = {

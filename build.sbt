@@ -28,6 +28,8 @@ val ammoniteVer = "1.2.1"
 libraryDependencies += "com.lihaoyi" %% "ammonite-ops" % ammoniteVer
 
 libraryDependencies += "com.softwaremill.macwire" %% "macros" % "2.3.1" % Provided
+libraryDependencies += "at.ipsquare" % "ipsquare-commons-core" % "3.0.1"
+
 
 
 
