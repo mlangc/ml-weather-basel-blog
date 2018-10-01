@@ -1,10 +1,15 @@
 package com.github.mlangc.wetterfrosch.smile
 
 class SelectedColsSmileFeaturesExtractor private (cols: Array[Set[String]]) extends SmileFeaturesExtractor {
+  require(cols.nonEmpty)
+
   def this(cols1: Set[String], colsn: Set[String]*) = {
     this((cols1 +: colsn).toArray)
   }
 
+  def this(cols: Seq[Set[String]]) = {
+    this(cols.toArray)
+  }
 
   override def toFeatures(seq: Seq[Map[String, Double]]): Array[Double] = {
     assert(seq.size == cols.size)

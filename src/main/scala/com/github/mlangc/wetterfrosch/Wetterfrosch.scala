@@ -6,10 +6,9 @@ import _root_.smile.math.Math
 import com.cibo.evilplot.colors.HTMLNamedColors
 import com.cibo.evilplot.displayPlot
 import com.cibo.evilplot.numeric.Point
-import com.cibo.evilplot.plot.{Overlay, ScatterPlot}
 import com.cibo.evilplot.plot.aesthetics.DefaultTheme._
 import com.cibo.evilplot.plot.renderers.PointRenderer
-import com.github.mlangc.wetterfrosch.HistoryExportColSubsets.ColsFromLastDayForTree23
+import com.cibo.evilplot.plot.{Overlay, ScatterPlot}
 import com.github.mlangc.wetterfrosch.HistoryExportCols.Day
 import com.github.mlangc.wetterfrosch.custom.MeanSingleValuePredictorTrainer
 import com.github.mlangc.wetterfrosch.dl4j.SingleValueOutputRnnTrainer
@@ -18,7 +17,7 @@ import com.typesafe.scalalogging.StrictLogging
 
 object Wetterfrosch extends ExportDataModule with StrictLogging {
   def main(args: Array[String]): Unit = {
-    val timeSeriesLen: Int = 1
+    val timeSeriesLen: Int = 9
     val useHourlyData = false
     val hourlyDataStepSize = 4
 
@@ -40,7 +39,7 @@ object Wetterfrosch extends ExportDataModule with StrictLogging {
     //val (rnnModel, rnnEvaluations) = trainRnn(trainTestSplit)
     //val (regModel, regEvaluations) = trainRidgeRegression(trainTestSplit)
 
-    val smileFeaturesExtractor = new SelectedColsSmileFeaturesExtractor(ColsFromLastDayForTree23)
+    val smileFeaturesExtractor = new SelectedColsSmileFeaturesExtractor(HistoryExportColSubsets.ColsForLast9DaysFromTree100)
 
     val evaluations: Array[Evaluations] = Array(
       train("Mean", new MeanSingleValuePredictorTrainer, trainTestSplit)._2,
