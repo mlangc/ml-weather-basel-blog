@@ -6,10 +6,11 @@ import _root_.smile.math.Math
 import com.cibo.evilplot.colors.HTMLNamedColors
 import com.cibo.evilplot.displayPlot
 import com.cibo.evilplot.numeric.Point
+import com.cibo.evilplot.plot.{Overlay, ScatterPlot}
 import com.cibo.evilplot.plot.aesthetics.DefaultTheme._
 import com.cibo.evilplot.plot.renderers.PointRenderer
-import com.cibo.evilplot.plot.Overlay
-import com.cibo.evilplot.plot.ScatterPlot
+import com.github.mlangc.wetterfrosch.HistoryExportColSubsets.ColsFromLastDayForTree23
+import com.github.mlangc.wetterfrosch.HistoryExportCols.Day
 import com.github.mlangc.wetterfrosch.custom.MeanSingleValuePredictorTrainer
 import com.github.mlangc.wetterfrosch.dl4j.SingleValueOutputRnnTrainer
 import com.github.mlangc.wetterfrosch.smile._
@@ -39,11 +40,13 @@ object Wetterfrosch extends ExportDataModule with StrictLogging {
     //val (rnnModel, rnnEvaluations) = trainRnn(trainTestSplit)
     //val (regModel, regEvaluations) = trainRidgeRegression(trainTestSplit)
 
+    val smileFeaturesExtractor = new SelectedColsSmileFeaturesExtractor(ColsFromLastDayForTree23)
+
     val evaluations: Array[Evaluations] = Array(
       train("Mean", new MeanSingleValuePredictorTrainer, trainTestSplit)._2,
-      train(s"Tree-$timeSeriesLen", new SmileRegressionTreeTrainer(4), trainTestSplit)._2,
+      train(s"Tree-$timeSeriesLen", new SmileRegressionTreeTrainer(23, smileFeaturesExtractor), trainTestSplit)._2,
       //train(s"Forest-$timeSeriesLen", new SmileGbmRegressionTrainer(500, 20), trainTestSplit)._2,
-      //train(s"OLS-$timeSeriesLen", new SmileOlsTrainer, trainTestSplit)._2,
+      train(s"OLS-$timeSeriesLen", new SmileOlsTrainer(smileFeaturesExtractor), trainTestSplit)._2,
       //regEvaluations
     )
 
@@ -63,17 +66,17 @@ object Wetterfrosch extends ExportDataModule with StrictLogging {
     val actual = {
       plotData
         .tail
-        .map(r => Point(r(HistoryExportCols.Day), r(targetCol)))
+        .map(r => Point(r(Day), r(targetCol)))
     }
 
     val regPredictions = {
       regModel.predict(plotData.init.map(Seq(_))).zip(plotData.tail)
-        .map { case (p, r) => Point(r(HistoryExportCols.Day), p) }
+        .map { case (p, r) => Point(r(Day), p) }
     }
 
     val rnnPredictions = {
       rnnModel.predict(plotData.init.map(Seq(_))).zip(plotData.tail)
-        .map { case (p, r) => Point(r(HistoryExportCols.Day), p) }
+        .map { case (p, r) => Point(r(Day), p) }
     }
 
     displayPlot {

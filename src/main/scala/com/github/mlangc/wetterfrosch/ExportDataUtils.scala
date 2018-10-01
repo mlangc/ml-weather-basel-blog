@@ -14,11 +14,25 @@ object ExportDataUtils {
     row.toSeq.sortBy(_._1).map(_._2)
   }
 
+  /** Flattens a sequence of maps of doubles into a sequence of doubles ordered by their appearance and their
+    * respective keys
+    */
+  def toDoubles(seq: Seq[Map[String, Double]]): Seq[Double] = {
+    seq.flatMap(toDoubles)
+  }
+
   /** Undoes toDoubles using the provided keys
     */
   def relabel(values: Seq[Double], keys: Set[String]): Map[String, Double] = {
     require(keys.size == values.size)
     keys.toSeq.sorted.zip(values).toMap
+  }
+
+  /** Undoes toDoubles for sequences using the provided keys
+    */
+  def relabelFlattenedSeq(values: Seq[Double], keys: Set[String]): Seq[Map[String, Double]] = {
+    require(values.size % keys.size == 0)
+    values.sliding(keys.size, keys.size).map(relabel(_, keys)).toSeq
   }
 
   def localDateFrom(row: Map[String, Double]): LocalDate = {

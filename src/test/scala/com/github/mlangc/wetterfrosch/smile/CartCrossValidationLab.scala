@@ -23,7 +23,7 @@ import smile.validation.MeanAbsoluteDeviation
 import smile.validation.RMSE
 
 object CartCrossValidationLab extends SmileLabModule with StrictLogging {
-  override def timeSeriesLen: Int = 9
+  override def timeSeriesLen: Int = 3
   override def seed: Int = 42
 
   private case class Metrics(rmse: Double, mae: Double)
@@ -36,7 +36,7 @@ object CartCrossValidationLab extends SmileLabModule with StrictLogging {
   def main(args: Array[String]): Unit = {
     Math.setSeed(seed)
 
-    val cartMetrics = cvCarts(2.to(25, 1), 10, 10)
+    val cartMetrics = cvCarts(Seq(4, 50, 75, 100), 10, 10)
     val best = cartMetrics.minBy(_._2.cv.rmse)._1
 
     cartMetrics.foreach { case (maxNode, metrics) =>

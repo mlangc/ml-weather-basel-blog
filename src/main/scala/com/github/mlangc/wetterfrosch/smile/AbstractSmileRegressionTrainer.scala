@@ -13,13 +13,13 @@ abstract class AbstractSmileRegressionTrainer(
   def train(trainingData: Seq[Seq[Map[String, Double]]], targetCol: String)
   : SingleValuePredictor = {
     val (trainingFeatures, trainingLabels) =
-      featureExtractor.toFeaturesWithLabels(trainingData, targetCol)
+      featuresExtractor.toFeaturesWithLabels(trainingData, targetCol)
 
     val regression = trainModel(trainingFeatures, trainingLabels)
     new SmileRegressionSingleValuePredictor(
-      regression, targetCol, featureExtractor.toFeatures)
+      regression, targetCol, featuresExtractor.toFeatures)
   }
 
-  protected def featureExtractor: SmileFeaturesExtractor =
+  protected def featuresExtractor: SmileFeaturesExtractor =
     DefaultSmileFeaturesExtractor
 }

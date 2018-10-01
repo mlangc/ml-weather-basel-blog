@@ -5,13 +5,17 @@ import com.typesafe.scalalogging.StrictLogging
 import smile.regression
 
 object ExamineTrees extends SmileLabModule with StrictLogging {
-  override def timeSeriesLen: Int = 1
+  override def timeSeriesLen: Int = 3
 
   def main(args: Array[String]): Unit = {
     val colNames = exportData.csvDaily.head.keySet
-    val cart = regression.cart(trainFeatures, trainLabels, 23)
-    val importance = ExportDataUtils.relabel(cart.importance(), colNames)
-      .toSeq
+    val cart = regression.cart(trainFeatures, trainLabels, 100)
+    val importance = ExportDataUtils.relabelFlattenedSeq(cart.importance(), colNames)
+      .zipWithIndex
+      .flatMap { case (row, i) =>
+        row.toSeq
+          .map { case (key, value) => (s"<${i - timeSeriesLen}> - $key", value) }
+      }
       .sortBy(-_._2)
 
     println("Importance:")
