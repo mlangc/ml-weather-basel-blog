@@ -3,7 +3,7 @@ package com.github.mlangc.wetterfrosch
 import java.time.LocalDate
 
 import _root_.smile.math.Math
-import at.ipsquare.commons.core.util.{PerformanceLogFormatter, PerformanceLogger}
+import at.ipsquare.commons.core.util.PerformanceLogger
 import com.cibo.evilplot.colors.HTMLNamedColors
 import com.cibo.evilplot.displayPlot
 import com.cibo.evilplot.numeric.Point
@@ -11,9 +11,10 @@ import com.cibo.evilplot.plot.aesthetics.DefaultTheme._
 import com.cibo.evilplot.plot.renderers.PointRenderer
 import com.cibo.evilplot.plot.{Overlay, ScatterPlot}
 import com.github.mlangc.wetterfrosch.HistoryExportCols.Day
-import com.github.mlangc.wetterfrosch.custom.MeanSingleValuePredictorTrainer
+import com.github.mlangc.wetterfrosch.custom.{MeanSingleValuePredictorTrainer, PersistenceModelSingleValuePredictorDummyTrainer, PersistenceModelSingleValuePredictor}
 import com.github.mlangc.wetterfrosch.dl4j.SingleValueOutputRnnTrainer
 import com.github.mlangc.wetterfrosch.smile._
+import com.github.mlangc.wetterfrosch.smile.implicits._
 import com.typesafe.scalalogging.StrictLogging
 
 object Wetterfrosch extends ExportDataModule with StrictLogging {
@@ -22,7 +23,7 @@ object Wetterfrosch extends ExportDataModule with StrictLogging {
 
   def main(args: Array[String]): Unit = {
     PerformanceLogger.timedExec { () =>
-      val timeSeriesLen: Int = 1
+      val timeSeriesLen: Int = 9
       val useHourlyData = false
       val hourlyDataStepSize = 4
 
@@ -47,8 +48,9 @@ object Wetterfrosch extends ExportDataModule with StrictLogging {
       val smileFeaturesExtractor = DefaultSmileFeaturesExtractor
 
       val evaluations: Array[Evaluations] = Array(
-        train("Mean", new MeanSingleValuePredictorTrainer, trainTestSplit)._2,
-        train(s"Tree-$timeSeriesLen", new SmileRegressionTreeTrainer(23, smileFeaturesExtractor), trainTestSplit)._2,
+        //train("Persistence", new PersistenceModelSingleValuePredictorDummyTrainer, trainTestSplit)._2,
+        //train("Mean", new MeanSingleValuePredictorTrainer, trainTestSplit)._2,
+        train(s"Tree-$timeSeriesLen", new SmileRegressionTreeTrainer(4, smileFeaturesExtractor), trainTestSplit)._2,
         //train(s"Forest-$timeSeriesLen", new SmileGbmRegressionTrainer(500, 20), trainTestSplit)._2,
         train(s"OLS-$timeSeriesLen", new SmileOlsTrainer(smileFeaturesExtractor), trainTestSplit)._2,
         //regEvaluations

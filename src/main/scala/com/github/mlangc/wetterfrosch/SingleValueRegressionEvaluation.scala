@@ -17,10 +17,16 @@ trait SingleValueRegressionEvaluation {
 }
 
 object SingleValueRegressionEvaluation {
+  private case class SingleValueRegressionEvaluationImpl(mae: Double, mse: Double)
+    extends SingleValueRegressionEvaluation
+
   def mean(evaluations: Seq[SingleValueRegressionEvaluation]): SingleValueRegressionEvaluation = {
-    new SingleValueRegressionEvaluation {
-      val mae: Double = StatHelpers.mean(evaluations.map(_.mae))
-      val mse: Double = StatHelpers.mean(evaluations.map(_.mse))
-    }
+    apply(
+      mae = StatHelpers.mean(evaluations.map(_.mae)),
+      mse = StatHelpers.mean(evaluations.map(_.mse)))
+  }
+
+  def apply(mae: Double, mse: Double): SingleValueRegressionEvaluation = {
+    SingleValueRegressionEvaluationImpl(mae, mse)
   }
 }

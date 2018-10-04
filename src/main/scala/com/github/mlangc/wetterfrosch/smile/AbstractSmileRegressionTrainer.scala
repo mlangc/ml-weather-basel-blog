@@ -7,7 +7,7 @@ import smile.regression.Regression
 abstract class AbstractSmileRegressionTrainer(
   /** Performs the training with the given features and labels
     */
-  trainModel: (Array[Array[Double]], Array[Double]) => Regression[Array[Double]]
+  val trainModel: (Array[Array[Double]], Array[Double]) => Regression[Array[Double]]
 ) extends SingleValuePredictorTrainer {
 
   def train(trainingData: Seq[Seq[Map[String, Double]]], targetCol: String)
@@ -20,6 +20,6 @@ abstract class AbstractSmileRegressionTrainer(
       regression, targetCol, featuresExtractor.toFeatures)
   }
 
-  protected def featuresExtractor: SmileFeaturesExtractor =
+  def featuresExtractor: SmileFeaturesExtractor =
     DefaultSmileFeaturesExtractor
 }
