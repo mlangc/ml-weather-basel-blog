@@ -18,14 +18,20 @@ import com.github.mlangc.wetterfrosch.smile.implicits._
 import com.typesafe.scalalogging.StrictLogging
 
 object Wetterfrosch extends ExportDataModule with StrictLogging {
-  private val numFolds = 25
-  private val nCvRuns = 50
+  private def numFolds = 25
+  private def nCvRuns = 50
+
+  override lazy val historyExportRowTransformers: HistoryExportRowTransformers = new HistoryExportRowTransformers(
+    general = Seq(ExportDataTransformations.addTimeOfYearCols(_, keepOrigCols = true))
+  )
 
   def main(args: Array[String]): Unit = {
     PerformanceLogger.timedExec { () =>
       val timeSeriesLen: Int = 1
       val useHourlyData = false
       val hourlyDataStepSize = 1
+      val allCols = if (useHourlyData) exportData.csvHourly.head.keySet else exportData.csvDaily.head.keySet
+      val selectedColsForFeatureExtraction = allCols - HistoryExportCols.Year - HistoryExportCols.Month - HistoryExportCols.Day
 
       val suffix = {
         if (!useHourlyData) s"$timeSeriesLen"
@@ -50,12 +56,13 @@ object Wetterfrosch extends ExportDataModule with StrictLogging {
       //val (rnnModel, rnnEvaluations) = trainRnn(trainTestSplit)
       //val (regModel, regEvaluations) = trainRidgeRegression(trainTestSplit)
 
-      val smileFeaturesExtractor = new SelectedColsSmileFeaturesExtractor(HistoryExportColSubsets.ColsFromLastDayForTree4)
+      val smileFeaturesExtractor = new SelectedColsSmileFeaturesExtractor(
+        Seq.fill(timeSeriesLen)(selectedColsForFeatureExtraction))
 
       val evaluations: Array[Evaluations] = Array(
         //train("Persistence", new PersistenceModelSingleValuePredictorDummyTrainer, trainTestSplit)._2,
         //train("Mean", new MeanSingleValuePredictorTrainer, trainTestSplit)._2,
-        train(s"Tree-$suffix", new SmileRegressionTreeTrainer(4, DefaultSmileFeaturesExtractor), trainTestSplit)._2,
+        train(s"Tree-$suffix", new SmileRegressionTreeTrainer(23, smileFeaturesExtractor), trainTestSplit)._2,
         //train(s"Gbm-$suffix", new SmileGbmRegressionTrainer(100, 4), trainTestSplit)._2,
         train(s"OLS-$timeSeriesLen", new SmileOlsTrainer(smileFeaturesExtractor), trainTestSplit)._2,
         //train(s"Ridge-$suffix", new SmileRidgeRegressionTrainer(1), trainTestSplit)._2

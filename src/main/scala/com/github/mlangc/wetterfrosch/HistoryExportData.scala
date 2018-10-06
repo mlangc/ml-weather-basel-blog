@@ -1,23 +1,15 @@
 package com.github.mlangc.wetterfrosch
 
-class HistoryExportData(parser: HistoryExportParser = new HistoryExportParser) {
+class HistoryExportData(parser: HistoryExportParser = new HistoryExportParser,
+                        historyExportRowTransformers: HistoryExportRowTransformers = new HistoryExportRowTransformers()) {
+
   lazy val csvDaily: Seq[Map[String, Double]] = {
-    cleanDailyData(parser.parse(Resources.historyExportDaily))
+    parser.parse(Resources.historyExportDaily)
+      .map(historyExportRowTransformers.transformDaily)
   }
 
   lazy val csvHourly: Seq[Map[String, Double]] = {
-    cleanHourlyData(parser.parse(Resources.historyExportHourly))
-  }
-
-  private def cleanDailyData(data: Seq[Map[String, Double]]) = {
-    data.map { row =>
-      row - HistoryExportCols.Hour - HistoryExportCols.Minute
-    }
-  }
-
-  private def cleanHourlyData(data: Seq[Map[String, Double]]) = {
-    data.map { row =>
-      row - HistoryExportCols.Minute
-    }
+    parser.parse(Resources.historyExportHourly)
+      .map(historyExportRowTransformers.transformHourly)
   }
 }

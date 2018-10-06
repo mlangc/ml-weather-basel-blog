@@ -8,6 +8,7 @@ trait ExportDataModule {
 
   def targetCol: String = HistoryExportCols.TotalPrecipitationDailySum
 
+  lazy val historyExportRowTransformers = new HistoryExportRowTransformers()
   lazy val evaluator: SingleValueRegressionEvaluator = wire[SingleValueRegressionEvaluator]
   lazy val exportData: HistoryExportData = wire[HistoryExportData]
   lazy val historyExportParser: HistoryExportParser = wire[HistoryExportParser]

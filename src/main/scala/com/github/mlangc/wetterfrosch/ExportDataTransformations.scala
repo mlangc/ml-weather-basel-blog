@@ -33,4 +33,12 @@ object ExportDataTransformations {
       }
     }.getOrElse(row)
   }
+
+  def cleanDailyData(row: Map[String, Double]): Map[String, Double] = {
+    row - HistoryExportCols.Hour - HistoryExportCols.Minute
+  }
+
+  def cleanHourlyData(row: Map[String, Double]): Map[String, Double] = {
+    row - HistoryExportCols.Minute
+  }
 }
