@@ -35,4 +35,7 @@ object HistoryExportCols {
   val WindSpeedDailyMean900mb = "Wind Speed daily mean [900 mb]"
   val WindSpeedDailyMax900mb = "Wind Speed daily max [900 mb]"
   val TotalCloudCoverDailyMean = "Total Cloud Cover daily mean [sfc]"
+
+  val TimeOfYear1 = "Time of Year 1"
+  val TimeOfYear2 = "Time of Year 2"
 }
