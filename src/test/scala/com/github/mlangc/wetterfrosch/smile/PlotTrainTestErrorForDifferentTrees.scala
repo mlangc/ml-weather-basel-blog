@@ -13,7 +13,8 @@ import smile.regression.Regression
 import smile.validation
 
 object PlotTrainTestErrorForDifferentTrees extends SmileLabModule with StrictLogging {
-  override def timeSeriesLen: Int = 1
+  override def timeSeriesLen: Int = 2
+  override def useHourlyData = false
 
   private case class Metrics(rmse: Double, mae: Double)
 

@@ -5,11 +5,12 @@ import com.typesafe.scalalogging.StrictLogging
 import smile.regression
 
 object ExamineTrees extends SmileLabModule with StrictLogging {
-  override def timeSeriesLen: Int = 9
+  override def timeSeriesLen = 2
+  override def hoursStepSize = 1
+  override def useHourlyData = false
 
   def main(args: Array[String]): Unit = {
-    val colNames = exportData.csvDaily.head.keySet
-    val cart = regression.cart(trainFeatures, trainLabels, 100)
+    val cart = regression.cart(trainFeatures, trainLabels, 75)
     val importancePerTimeStep = ExportDataUtils.relabelFlattenedSeq(cart.importance(), colNames)
 
     val sortedImportance = importancePerTimeStep

@@ -23,9 +23,14 @@ object Wetterfrosch extends ExportDataModule with StrictLogging {
 
   def main(args: Array[String]): Unit = {
     PerformanceLogger.timedExec { () =>
-      val timeSeriesLen: Int = 9
+      val timeSeriesLen: Int = 1
       val useHourlyData = false
-      val hourlyDataStepSize = 4
+      val hourlyDataStepSize = 1
+
+      val suffix = {
+        if (!useHourlyData) s"$timeSeriesLen"
+        else s"${timeSeriesLen}h"
+      }
 
       Math.setSeed(seed)
 
@@ -45,14 +50,15 @@ object Wetterfrosch extends ExportDataModule with StrictLogging {
       //val (rnnModel, rnnEvaluations) = trainRnn(trainTestSplit)
       //val (regModel, regEvaluations) = trainRidgeRegression(trainTestSplit)
 
-      val smileFeaturesExtractor = DefaultSmileFeaturesExtractor
+      val smileFeaturesExtractor = new SelectedColsSmileFeaturesExtractor(HistoryExportColSubsets.ColsFromLastDayForTree4)
 
       val evaluations: Array[Evaluations] = Array(
         //train("Persistence", new PersistenceModelSingleValuePredictorDummyTrainer, trainTestSplit)._2,
         //train("Mean", new MeanSingleValuePredictorTrainer, trainTestSplit)._2,
-        train(s"Tree-$timeSeriesLen", new SmileRegressionTreeTrainer(4, smileFeaturesExtractor), trainTestSplit)._2,
-        //train(s"Forest-$timeSeriesLen", new SmileGbmRegressionTrainer(500, 20), trainTestSplit)._2,
+        train(s"Tree-$suffix", new SmileRegressionTreeTrainer(4, DefaultSmileFeaturesExtractor), trainTestSplit)._2,
+        //train(s"Gbm-$suffix", new SmileGbmRegressionTrainer(100, 4), trainTestSplit)._2,
         train(s"OLS-$timeSeriesLen", new SmileOlsTrainer(smileFeaturesExtractor), trainTestSplit)._2,
+        //train(s"Ridge-$suffix", new SmileRidgeRegressionTrainer(1), trainTestSplit)._2
         //regEvaluations
       )
 
