@@ -15,6 +15,7 @@ import com.cibo.evilplot.plot.aesthetics.DefaultTheme._
 import com.cibo.evilplot.plot.aesthetics.Theme
 import com.cibo.evilplot.plot.renderers.PathRenderer
 import com.cibo.evilplot.plot.renderers.PointRenderer
+import com.github.mlangc.wetterfrosch.util.store.StoreKey
 import com.typesafe.scalalogging.StrictLogging
 import smile.math.Math
 import smile.regression
@@ -22,6 +23,9 @@ import smile.regression.Regression
 import smile.validation
 import smile.validation.MeanAbsoluteDeviation
 import smile.validation.RMSE
+
+import boopickle.Default._
+import com.github.mlangc.wetterfrosch.util.store.BooPickler.adapter
 
 object CartCrossValidationLab extends SmileLabModule with StrictLogging {
   override def timeSeriesLen: Int = 2
@@ -38,7 +42,7 @@ object CartCrossValidationLab extends SmileLabModule with StrictLogging {
   def main(args: Array[String]): Unit = {
     Math.setSeed(seed)
 
-    val metrics = cvGeneric(Seq(50), 10, 1) { (features, labels, ntrees) =>
+    val metrics = cvGeneric("forest", Seq(1, 2, 5, 7, 10, 25, 50, 100), 10, 3) { (features, labels, ntrees) =>
       regression.randomForest(features, labels, ntrees = ntrees)
     }
 
@@ -53,37 +57,44 @@ object CartCrossValidationLab extends SmileLabModule with StrictLogging {
   }
 
   private def cvCarts(maxNodes: Seq[Int], folds: Int, samplesPerFold: Int = 1): Seq[(Int, CombinedMetrics)] = {
-    cvGeneric(maxNodes, folds, samplesPerFold)(regression.cart(_, _, _))
+    cvGeneric("cart", maxNodes, folds, samplesPerFold)(regression.cart(_, _, _))
   }
 
-  private def cvGeneric[ParamType](params: Seq[ParamType], folds: Int, samplesPerFold: Int)
-                                  (trainWithParam: (Array[Array[Double]], Array[Double], ParamType) => Regression[Array[Double]])
-  : Seq[(ParamType, CombinedMetrics)] = {
-    params.par.map { param =>
-      val cvMetrics = mean {
-        1.to(samplesPerFold).map { _ =>
-          val Array(rmse, mae) = validation.cv(trainFeatures, trainLabels,
-            folds, new RMSE, new MeanAbsoluteDeviation)(trainWithParam(_, _, param))
+  private def cvGeneric[ParamsType](algName: String, params: Seq[ParamsType], folds: Int, samplesPerFold: Int)
+                                  (trainWithParam: (Array[Array[Double]], Array[Double], ParamsType) => Regression[Array[Double]])
+  : Seq[(ParamsType, CombinedMetrics)] = {
+    params.map { params =>
+      params -> objectStore.load(toCvKey(algName, params, folds, samplesPerFold)) {
+        val cvMetrics = mean {
+          1.to(samplesPerFold).map { _ =>
+            val Array(rmse, mae) = validation.cv(trainFeatures, trainLabels,
+              folds, new RMSE, new MeanAbsoluteDeviation)(trainWithParam(_, _, params))
 
-          Metrics(rmse, mae)
+            Metrics(rmse, mae)
+          }
         }
-      }
 
-      val model = trainWithParam(trainFeatures, trainLabels, param)
-      def calcMetrics(features: Array[Array[Double]], labels: Array[Double]): Metrics = {
-        val predictions = model.predict(features)
-        Metrics(
-          rmse = validation.rmse(labels, predictions),
-          mae = validation.mad(labels, predictions)
+        val model = trainWithParam(trainFeatures, trainLabels, params)
+        def calcMetrics(features: Array[Array[Double]], labels: Array[Double]): Metrics = {
+          val predictions = model.predict(features)
+          Metrics(
+            rmse = validation.rmse(labels, predictions),
+            mae = validation.mad(labels, predictions)
+          )
+        }
+
+        CombinedMetrics(
+          cv = cvMetrics,
+          train = calcMetrics(trainFeatures, trainLabels),
+          test = calcMetrics(testFeatures, testLabels)
         )
       }
-
-      param -> CombinedMetrics(
-        cv = cvMetrics,
-        train = calcMetrics(trainFeatures, trainLabels),
-        test = calcMetrics(testFeatures, testLabels)
-      )
     }.seq
+  }
+
+  private def toCvKey[ParamsType](algName: String, params: ParamsType, folds: Int, samplesPerFold: Int): StoreKey = {
+    val name = s"cvRes-$algName-$folds-$samplesPerFold-$params"
+    StoreKey(getClass, name)
   }
 
   private def mean(metrics: Seq[Metrics]): Metrics = {

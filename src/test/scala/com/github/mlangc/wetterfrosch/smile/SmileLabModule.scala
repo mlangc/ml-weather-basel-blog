@@ -2,8 +2,9 @@ package com.github.mlangc.wetterfrosch.smile
 
 import com.github.mlangc.wetterfrosch.ExportDataModule
 import com.github.mlangc.wetterfrosch.TrainTestSplit
+import com.github.mlangc.wetterfrosch.util.UtilityModule
 
-trait SmileLabModule extends ExportDataModule {
+trait SmileLabModule extends ExportDataModule with UtilityModule {
   def timeSeriesLen = 1
   def useHourlyData = false
   def hoursStepSize = 1
