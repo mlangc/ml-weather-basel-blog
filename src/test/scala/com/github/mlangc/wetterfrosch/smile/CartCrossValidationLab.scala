@@ -4,6 +4,7 @@ import com.cibo.evilplot._
 import com.cibo.evilplot.colors.Color
 import com.cibo.evilplot.colors.HTMLNamedColors.black
 import com.cibo.evilplot.colors.HTMLNamedColors.blue
+import com.cibo.evilplot.colors.HTMLNamedColors.green
 import com.cibo.evilplot.colors.HTMLNamedColors.red
 import com.cibo.evilplot.geometry.Disc
 import com.cibo.evilplot.geometry.Drawable
@@ -37,23 +38,23 @@ object CartCrossValidationLab extends SmileLabModule with StrictLogging {
   def main(args: Array[String]): Unit = {
     Math.setSeed(seed)
 
-    val cartMetrics = cvCarts(2.to(50), 10, 2)
-    val best = cartMetrics.minBy(_._2.cv.rmse)._1
-
-    cartMetrics.foreach { case (maxNode, metrics) =>
-        val prefix = if (maxNode == best) "*" else " "
-        logger.info(f"$prefix$maxNode%02d, ${metrics.cv.rmse}%.2f")
+    val metrics = cvGeneric(Seq(50), 10, 1) { (features, labels, ntrees) =>
+      regression.randomForest(features, labels, ntrees = ntrees)
     }
 
-    plotCartMetrics(cartMetrics)
+    val best = metrics.minBy(_._2.cv.rmse)._1
+
+    metrics.foreach { case (maxNode, metric) =>
+        val prefix = if (maxNode == best) "*" else " "
+        logger.info(f"$prefix$maxNode%02d, ${metric.cv.rmse}%.2f")
+    }
+
+    plotMetrics(metrics)
   }
 
   private def cvCarts(maxNodes: Seq[Int], folds: Int, samplesPerFold: Int = 1): Seq[(Int, CombinedMetrics)] = {
     cvGeneric(maxNodes, folds, samplesPerFold)(regression.cart(_, _, _))
   }
-
-  private case class RandomForestParams()
-
 
   private def cvGeneric[ParamType](params: Seq[ParamType], folds: Int, samplesPerFold: Int)
                                   (trainWithParam: (Array[Array[Double]], Array[Double], ParamType) => Regression[Array[Double]])
@@ -94,7 +95,7 @@ object CartCrossValidationLab extends SmileLabModule with StrictLogging {
     Metrics(rmse = sum.rmse/n, mae = sum.mae/n)
   }
 
-  private def plotCartMetrics(cartMetrics: Seq[(Int, CombinedMetrics)]): Unit = {
+  private def plotMetrics(cartMetrics: Seq[(Int, CombinedMetrics)]): Unit = {
     val (cvRmses, trainRmses, testRmses) = cartMetrics.map { case (n, metrics) =>
       (Point(n, metrics.cv.rmse), Point(n, metrics.train.rmse), Point(n, metrics.test.rmse))
     }.unzip3
@@ -127,8 +128,8 @@ object CartCrossValidationLab extends SmileLabModule with StrictLogging {
     val plot =
       Overlay(
           XyPlot(cvRmses, pathRenderer = namedRenderer("CV RMSE", red), pointRenderer = cvPointRenderer),
-          XyPlot(trainRmses, pathRenderer = namedRenderer("Train RMSE", blue))
-          //XyPlot(testRmses, pathRenderer = namedRenderer("Test RMSE", green))
+          XyPlot(trainRmses, pathRenderer = namedRenderer("Train RMSE", blue)),
+          XyPlot(testRmses, pathRenderer = namedRenderer("Test RMSE", green))
         ).xAxis(tickCount = Some(cartMetrics.size))
         .yAxis(tickCount = Some(5))
         .frame()
