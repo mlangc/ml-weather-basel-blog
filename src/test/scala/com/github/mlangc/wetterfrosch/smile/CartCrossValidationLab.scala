@@ -1,31 +1,24 @@
 package com.github.mlangc.wetterfrosch.smile
 
+import java.util.concurrent.ThreadLocalRandom
+
+import boopickle.Default._
 import com.cibo.evilplot._
 import com.cibo.evilplot.colors.Color
-import com.cibo.evilplot.colors.HTMLNamedColors.black
-import com.cibo.evilplot.colors.HTMLNamedColors.blue
-import com.cibo.evilplot.colors.HTMLNamedColors.green
-import com.cibo.evilplot.colors.HTMLNamedColors.red
-import com.cibo.evilplot.geometry.Disc
-import com.cibo.evilplot.geometry.Drawable
-import com.cibo.evilplot.geometry.Extent
+import com.cibo.evilplot.colors.HTMLNamedColors.{black, blue, green, red}
+import com.cibo.evilplot.geometry.{Disc, Drawable, Extent}
 import com.cibo.evilplot.numeric.Point
 import com.cibo.evilplot.plot._
 import com.cibo.evilplot.plot.aesthetics.DefaultTheme._
 import com.cibo.evilplot.plot.aesthetics.Theme
-import com.cibo.evilplot.plot.renderers.PathRenderer
-import com.cibo.evilplot.plot.renderers.PointRenderer
+import com.cibo.evilplot.plot.renderers.{PathRenderer, PointRenderer}
+import com.github.mlangc.wetterfrosch.util.store.BooPickler.adapter
 import com.github.mlangc.wetterfrosch.util.store.StoreKey
 import com.typesafe.scalalogging.StrictLogging
 import smile.math.Math
-import smile.regression
-import smile.regression.Regression
-import smile.validation
-import smile.validation.MeanAbsoluteDeviation
-import smile.validation.RMSE
-
-import boopickle.Default._
-import com.github.mlangc.wetterfrosch.util.store.BooPickler.adapter
+import smile.regression.{GradientTreeBoost, Regression}
+import smile.{regression, validation}
+import smile.validation.{MeanAbsoluteDeviation, RMSE}
 
 object CartCrossValidationLab extends SmileLabModule with StrictLogging {
   override def timeSeriesLen: Int = 2
@@ -33,6 +26,38 @@ object CartCrossValidationLab extends SmileLabModule with StrictLogging {
   override def useHourlyData = false
 
   private case class Metrics(rmse: Double, mae: Double)
+
+  private case class RandomForestParams(ntrees: Int = 500, maxNodes: Int = -1, nodeSize: Int = 5, mtry: Int = -1, subsample: Double = 1.0) {
+    override def toString: String = {
+      if (copy(ntrees = 500) == RandomForestParams()) s"$ntrees"
+      else this.productIterator.toSeq.mkString(",")
+    }
+  }
+
+  private case class GbmParams(ntrees: Int = 500,
+                               loss: GradientTreeBoost.Loss = GradientTreeBoost.Loss.LeastAbsoluteDeviation,
+                               maxNodes: Int = 6,
+                               shrinkage: Double = 0.05,
+                               subsample: Double = 0.7) {
+    override def toString: String = {
+      if (copy(ntrees = 500) == GbmParams()) s"$ntrees"
+      else this.productIterator.toSeq.mkString(",")
+    }
+  }
+
+  private object GbmParams {
+    def rand(): GbmParams = {
+      val rng = ThreadLocalRandom.current()
+
+      GbmParams(
+        ntrees = 250,
+        maxNodes = 7,
+        shrinkage = rng.nextDouble(0.036, 0.037),
+        subsample = rng.nextDouble(0.49, 0.5),
+        loss = GradientTreeBoost.Loss.LeastSquares
+      )
+    }
+  }
 
   private case class CombinedMetrics(
                                     cv: Metrics,
@@ -42,9 +67,11 @@ object CartCrossValidationLab extends SmileLabModule with StrictLogging {
   def main(args: Array[String]): Unit = {
     Math.setSeed(seed)
 
-    val metrics = cvGeneric("forest", Seq(1, 2, 5, 7, 10, 25, 50, 100), 10, 3) { (features, labels, ntrees) =>
-      regression.randomForest(features, labels, ntrees = ntrees)
-    }
+    searchGoodGbgParams(100)
+
+    val metrics = cvGeneric("gbm", Seq(50, 100, 200, 300, 400).map(ntrees => GbmParams(ntrees = ntrees, loss = GradientTreeBoost.Loss.LeastSquares, subsample = 0.5)), 10, 1) { (features, labels, params) =>
+      regression.gbm(features, labels, ntrees = params.ntrees, loss = params.loss, maxNodes = params.maxNodes, shrinkage = params.shrinkage, subsample = params.subsample)
+    }.map { case (params, metric) => params.ntrees -> metric }
 
     val best = metrics.minBy(_._2.cv.rmse)._1
 
@@ -54,6 +81,23 @@ object CartCrossValidationLab extends SmileLabModule with StrictLogging {
     }
 
     plotMetrics(metrics)
+  }
+
+  private def searchGoodGbgParams(tries: Int): Unit = {
+    val paramss = Seq.fill(tries)(GbmParams.rand()).distinct
+    val metrics = cvGbm(paramss, 10, 1)
+      .sortBy(_._2.cv.rmse)
+
+    logger.info("These are the results - sorted after CV RMSE:")
+    metrics.foreach { case (params, metric) =>
+        logger.info(f"  ${metric.cv.rmse}%.2f <- $params")
+    }
+  }
+
+  private def cvGbm(params: Seq[GbmParams], folds: Int, samplesPerFold: Int): Seq[(GbmParams, CombinedMetrics)] = {
+    cvGeneric("gbm", params, folds, samplesPerFold) { (features, labels, params) =>
+      regression.gbm(features, labels, ntrees = params.ntrees, loss = params.loss, maxNodes = params.maxNodes, shrinkage = params.shrinkage, subsample = params.subsample)
+    }
   }
 
   private def cvCarts(maxNodes: Seq[Int], folds: Int, samplesPerFold: Int = 1): Seq[(Int, CombinedMetrics)] = {

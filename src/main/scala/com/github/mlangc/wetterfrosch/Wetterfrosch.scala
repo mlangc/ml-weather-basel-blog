@@ -11,7 +11,6 @@ import com.cibo.evilplot.plot.aesthetics.DefaultTheme._
 import com.cibo.evilplot.plot.renderers.PointRenderer
 import com.cibo.evilplot.plot.{Overlay, ScatterPlot}
 import com.github.mlangc.wetterfrosch.HistoryExportCols.Day
-import com.github.mlangc.wetterfrosch.custom.{MeanSingleValuePredictorTrainer, PersistenceModelSingleValuePredictorDummyTrainer, PersistenceModelSingleValuePredictor}
 import com.github.mlangc.wetterfrosch.dl4j.SingleValueOutputRnnTrainer
 import com.github.mlangc.wetterfrosch.smile._
 import com.github.mlangc.wetterfrosch.smile.implicits._
@@ -62,10 +61,11 @@ object Wetterfrosch extends ExportDataModule with StrictLogging {
       val evaluations: Array[Evaluations] = Array(
         //train("Persistence", new PersistenceModelSingleValuePredictorDummyTrainer, trainTestSplit)._2,
         //train("Mean", new MeanSingleValuePredictorTrainer, trainTestSplit)._2,
-        train(s"Tree-$suffix", new SmileRegressionTreeTrainer(23, smileFeaturesExtractor), trainTestSplit)._2,
-        //train(s"Gbm-$suffix", new SmileGbmRegressionTrainer(100, 4), trainTestSplit)._2,
-        train(s"OLS-$timeSeriesLen", new SmileOlsTrainer(smileFeaturesExtractor), trainTestSplit)._2,
+        //train(s"Tree-$suffix", new SmileRegressionTreeTrainer(23, smileFeaturesExtractor), trainTestSplit)._2,
+        train(s"Gbm-$suffix", new SmileGbmRegressionTrainer(500, 6), trainTestSplit)._2,
+        //train(s"OLS-$timeSeriesLen", new SmileOlsTrainer(smileFeaturesExtractor), trainTestSplit)._2,
         //train(s"Ridge-$suffix", new SmileRidgeRegressionTrainer(1), trainTestSplit)._2
+        //train(s"Forst-$suffix", new SmileRandomForestRegressionTrainer(nTrees = 500), trainTestSplit)._2
         //regEvaluations
       )
 
