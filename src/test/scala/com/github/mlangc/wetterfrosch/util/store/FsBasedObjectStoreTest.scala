@@ -3,11 +3,10 @@ package com.github.mlangc.wetterfrosch.util.store
 import java.io.File
 import java.nio.file.Files
 
+import boopickle.Default._
+import com.github.mlangc.wetterfrosch.util.store.DefaultPicklers.boopickleAdapter
 import org.apache.commons.io.FileUtils
 import org.scalatest.FreeSpec
-
-import boopickle.Default._
-import BooPickler.adapter
 
 class FsBasedObjectStoreTest extends FreeSpec {
   "Load and store" - {

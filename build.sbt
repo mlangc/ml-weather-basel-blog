@@ -31,6 +31,7 @@ libraryDependencies += "com.softwaremill.macwire" %% "macros" % "2.3.1" % Provid
 libraryDependencies += "at.ipsquare" % "ipsquare-commons-core" % "3.0.1"
 libraryDependencies += "io.suzaku" %% "boopickle" % "1.3.0"
 libraryDependencies += "commons-io" % "commons-io" % "2.6"
+libraryDependencies += "com.storm-enroute" %% "scalameter" % "0.8.2" % Test
 
 
 

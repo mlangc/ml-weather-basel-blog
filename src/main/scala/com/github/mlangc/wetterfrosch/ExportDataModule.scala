@@ -13,4 +13,5 @@ trait ExportDataModule {
   lazy val exportData: HistoryExportData = wire[HistoryExportData]
   lazy val historyExportParser: HistoryExportParser = wire[HistoryExportParser]
   lazy val labeledDataAssembler: LabeledDataAssembler = wire[LabeledDataAssembler]
+  def labeledDataFilter: LabeledDataFilter = LabeledDataFilter.Default
 }

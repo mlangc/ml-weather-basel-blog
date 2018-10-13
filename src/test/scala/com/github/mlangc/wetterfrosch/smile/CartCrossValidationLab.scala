@@ -5,23 +5,23 @@ import java.util.concurrent.ThreadLocalRandom
 import boopickle.Default._
 import com.cibo.evilplot._
 import com.cibo.evilplot.colors.Color
-import com.cibo.evilplot.colors.HTMLNamedColors.{black, blue, green, red}
-import com.cibo.evilplot.geometry.{Disc, Drawable, Extent}
+import com.cibo.evilplot.colors.HTMLNamedColors.{black, blue, red}
+import com.cibo.evilplot.geometry.{Disc, Drawable, Extent, Group}
 import com.cibo.evilplot.numeric.Point
 import com.cibo.evilplot.plot._
-import com.cibo.evilplot.plot.aesthetics.DefaultTheme._
 import com.cibo.evilplot.plot.aesthetics.Theme
-import com.cibo.evilplot.plot.renderers.{PathRenderer, PointRenderer}
-import com.github.mlangc.wetterfrosch.util.store.BooPickler.adapter
+import com.cibo.evilplot.plot.renderers.{GridLineRenderer, PathRenderer, PointRenderer}
+import com.github.mlangc.wetterfrosch.evilplot.BlogTheme._
+import com.github.mlangc.wetterfrosch.util.store.DefaultPicklers.boopickleAdapter
 import com.github.mlangc.wetterfrosch.util.store.StoreKey
 import com.typesafe.scalalogging.StrictLogging
 import smile.math.Math
 import smile.regression.{GradientTreeBoost, Regression}
-import smile.{regression, validation}
 import smile.validation.{MeanAbsoluteDeviation, RMSE}
+import smile.{regression, validation}
 
 object CartCrossValidationLab extends SmileLabModule with StrictLogging {
-  override def timeSeriesLen: Int = 2
+  override def timeSeriesLen: Int = 1
   override def seed: Int = 42
   override def useHourlyData = false
 
@@ -67,11 +67,7 @@ object CartCrossValidationLab extends SmileLabModule with StrictLogging {
   def main(args: Array[String]): Unit = {
     Math.setSeed(seed)
 
-    searchGoodGbgParams(100)
-
-    val metrics = cvGeneric("gbm", Seq(50, 100, 200, 300, 400).map(ntrees => GbmParams(ntrees = ntrees, loss = GradientTreeBoost.Loss.LeastSquares, subsample = 0.5)), 10, 1) { (features, labels, params) =>
-      regression.gbm(features, labels, ntrees = params.ntrees, loss = params.loss, maxNodes = params.maxNodes, shrinkage = params.shrinkage, subsample = params.subsample)
-    }.map { case (params, metric) => params.ntrees -> metric }
+    val metrics = cvForests(maxNodes = 2.to(100, 10), 25, 1)
 
     val best = metrics.minBy(_._2.cv.rmse)._1
 
@@ -94,6 +90,12 @@ object CartCrossValidationLab extends SmileLabModule with StrictLogging {
     }
   }
 
+  private def cvForests(maxNodes: Seq[Int], folds: Int, samplesPerFold: Int): Seq[(Int, CombinedMetrics)] = {
+    cvGeneric("forest", maxNodes, folds, samplesPerFold) { (features, labels, maxNodes) =>
+      regression.randomForest(features, labels, maxNodes = maxNodes)
+    }
+  }
+
   private def cvGbm(params: Seq[GbmParams], folds: Int, samplesPerFold: Int): Seq[(GbmParams, CombinedMetrics)] = {
     cvGeneric("gbm", params, folds, samplesPerFold) { (features, labels, params) =>
       regression.gbm(features, labels, ntrees = params.ntrees, loss = params.loss, maxNodes = params.maxNodes, shrinkage = params.shrinkage, subsample = params.subsample)
@@ -107,7 +109,7 @@ object CartCrossValidationLab extends SmileLabModule with StrictLogging {
   private def cvGeneric[ParamsType](algName: String, params: Seq[ParamsType], folds: Int, samplesPerFold: Int)
                                   (trainWithParam: (Array[Array[Double]], Array[Double], ParamsType) => Regression[Array[Double]])
   : Seq[(ParamsType, CombinedMetrics)] = {
-    params.map { params =>
+    params.par.map { params =>
       params -> objectStore.load(toCvKey(algName, params, folds, samplesPerFold)) {
         val cvMetrics = mean {
           1.to(samplesPerFold).map { _ =>
@@ -159,6 +161,7 @@ object CartCrossValidationLab extends SmileLabModule with StrictLogging {
       Some(PathRenderer.named(name, color = color))
     }
 
+
     def cvPointRenderer(implicit theme: Theme): Some[PointRenderer] = {
       val minRmseIndex = cvRmses.zipWithIndex.minBy(_._1._2)._2
 
@@ -180,17 +183,29 @@ object CartCrossValidationLab extends SmileLabModule with StrictLogging {
       }
     }
 
+    def cvGridRenderer: Some[GridLineRenderer] = {
+      val minRmseLabel = cvRmses.minBy(_._2)._1.toInt.toString
+      Some {
+        (extent: Extent, label: String) => {
+          if (label == minRmseLabel) GridLineRenderer.xGridLineRenderer().render(extent, label)
+          else Group(Seq())
+        }
+
+      }
+    }
+
     val plot =
       Overlay(
           XyPlot(cvRmses, pathRenderer = namedRenderer("CV RMSE", red), pointRenderer = cvPointRenderer),
           XyPlot(trainRmses, pathRenderer = namedRenderer("Train RMSE", blue)),
-          XyPlot(testRmses, pathRenderer = namedRenderer("Test RMSE", green))
+          //XyPlot(testRmses, pathRenderer = namedRenderer("Test RMSE", green))
         ).xAxis(tickCount = Some(cartMetrics.size))
         .yAxis(tickCount = Some(5))
         .frame()
         .xLabel("Max nodes")
         .yLabel("RMSE")
-        .overlayLegend()
+        .xGrid(lineCount = Some(48), lineRenderer = cvGridRenderer)
+        .overlayLegend(0.9, 0.4)
 
     displayPlot(plot)
   }

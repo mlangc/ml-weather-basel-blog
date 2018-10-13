@@ -1,7 +1,5 @@
 package com.github.mlangc.wetterfrosch
 
-import java.time.LocalDate
-
 import _root_.smile.math.Math
 import at.ipsquare.commons.core.util.PerformanceLogger
 import com.cibo.evilplot.colors.HTMLNamedColors
@@ -20,9 +18,11 @@ object Wetterfrosch extends ExportDataModule with StrictLogging {
   private def numFolds = 25
   private def nCvRuns = 50
 
-  override lazy val historyExportRowTransformers: HistoryExportRowTransformers = new HistoryExportRowTransformers(
-    general = Seq(ExportDataTransformations.addTimeOfYearCols(_, keepOrigCols = true))
-  )
+  override def seed: Int = super.seed
+
+  //override lazy val historyExportRowTransformers: HistoryExportRowTransformers = new HistoryExportRowTransformers(
+  //  general = Seq(ExportDataTransformations.addTimeOfYearCols(_, keepOrigCols = true))
+  //)
 
   def main(args: Array[String]): Unit = {
     PerformanceLogger.timedExec { () =>
@@ -46,10 +46,7 @@ object Wetterfrosch extends ExportDataModule with StrictLogging {
           labeledDataAssembler.assemblyDailyData(timeSeriesLen)
       }
 
-      val (trainTestData, plotData) = labeledData.partition { rs =>
-        val date = ExportDataUtils.localDateFrom(rs.last)
-        date.isBefore(LocalDate.of(2018, 7, 31))
-      }
+      val (trainTestData, plotData) = labeledData.partition(labeledDataFilter)
 
       val trainTestSplit = new TrainTestSplit(trainTestData, seed)
       //val (rnnModel, rnnEvaluations) = trainRnn(trainTestSplit)
@@ -61,9 +58,9 @@ object Wetterfrosch extends ExportDataModule with StrictLogging {
       val evaluations: Array[Evaluations] = Array(
         //train("Persistence", new PersistenceModelSingleValuePredictorDummyTrainer, trainTestSplit)._2,
         //train("Mean", new MeanSingleValuePredictorTrainer, trainTestSplit)._2,
-        //train(s"Tree-$suffix", new SmileRegressionTreeTrainer(23, smileFeaturesExtractor), trainTestSplit)._2,
-        train(s"Gbm-$suffix", new SmileGbmRegressionTrainer(500, 6), trainTestSplit)._2,
-        //train(s"OLS-$timeSeriesLen", new SmileOlsTrainer(smileFeaturesExtractor), trainTestSplit)._2,
+        train(s"Tree-$suffix", new SmileRegressionTreeTrainer(11), trainTestSplit)._2,
+        //train(s"Gbm-$suffix", new SmileGbmRegressionTrainer(500, 6), trainTestSplit)._2,
+        //train(s"OLS-$timeSeriesLen", new SmileOlsTrainer(), trainTestSplit)._2,
         //train(s"Ridge-$suffix", new SmileRidgeRegressionTrainer(1), trainTestSplit)._2
         //train(s"Forst-$suffix", new SmileRandomForestRegressionTrainer(nTrees = 500), trainTestSplit)._2
         //regEvaluations
