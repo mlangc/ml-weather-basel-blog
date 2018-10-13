@@ -21,7 +21,7 @@ import smile.validation.{MeanAbsoluteDeviation, RMSE}
 import smile.{regression, validation}
 
 object CartCrossValidationLab extends SmileLabModule with StrictLogging {
-  override def timeSeriesLen: Int = 1
+  override def timeSeriesLen: Int = 2
   override def seed: Int = 42
   override def useHourlyData = false
 
@@ -67,7 +67,7 @@ object CartCrossValidationLab extends SmileLabModule with StrictLogging {
   def main(args: Array[String]): Unit = {
     Math.setSeed(seed)
 
-    val metrics = cvForests(maxNodes = 2.to(100, 10), 25, 1)
+    val metrics = cvCarts(maxNodes = 2.to(7), 25, 100)
 
     val best = metrics.minBy(_._2.cv.rmse)._1
 
@@ -139,7 +139,8 @@ object CartCrossValidationLab extends SmileLabModule with StrictLogging {
   }
 
   private def toCvKey[ParamsType](algName: String, params: ParamsType, folds: Int, samplesPerFold: Int): StoreKey = {
-    val name = s"cvRes-$algName-$folds-$samplesPerFold-$params"
+    val suffix = if (useHourlyData) "hourly" else "daily"
+    val name = s"cvRes-$algName-$folds-$samplesPerFold-$params-$timeSeriesLen-$suffix"
     StoreKey(getClass, name)
   }
 
@@ -204,8 +205,8 @@ object CartCrossValidationLab extends SmileLabModule with StrictLogging {
         .frame()
         .xLabel("Max nodes")
         .yLabel("RMSE")
-        .xGrid(lineCount = Some(48), lineRenderer = cvGridRenderer)
-        .overlayLegend(0.9, 0.4)
+        .xGrid(lineCount = Some(cvRmses.size), lineRenderer = cvGridRenderer)
+        .overlayLegend(1.0, 0.0)
 
     displayPlot(plot)
   }

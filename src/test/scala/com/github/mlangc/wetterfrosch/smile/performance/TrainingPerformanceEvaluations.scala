@@ -1,18 +1,12 @@
 package com.github.mlangc.wetterfrosch.smile.performance
 
-import com.github.mlangc.wetterfrosch.smile.SmileLabModule
 import org.scalameter._
 import org.scalameter.picklers.noPickler._
-import org.scalameter.reporting.LoggingReporter
 import smile.regression
 import smile.regression.Regression
 
-object TrainingPerformanceEvaluations extends Bench.LocalTime with SmileLabModule {
+object TrainingPerformanceEvaluations extends SmileLocalBench {
   override def timeSeriesLen: Int = 2
-  override def persistor: Persistor = Persistor.None
-  override def reporter = new LoggingReporter[Double]
-  override def aggregator: Aggregator[Double] = Aggregator.average
-  override def measurer: Measurer[Double] = new Measurer.Default
 
   private type TrainingFun = (Array[Array[Double]], Array[Double]) => Regression[Array[Double]]
 
@@ -24,12 +18,7 @@ object TrainingPerformanceEvaluations extends Bench.LocalTime with SmileLabModul
 
   private object Trainer {
     def withBasename(basename: String, fun: TrainingFun): Trainer = {
-      def mkName(basename: String) = {
-        val dailyHourly = if (useHourlyData) "hourly" else "daily"
-        s"$basename-$dailyHourly-$timeSeriesLen"
-      }
-
-      Trainer(mkName(basename), fun)
+      Trainer(expandName(basename), fun)
     }
   }
 
