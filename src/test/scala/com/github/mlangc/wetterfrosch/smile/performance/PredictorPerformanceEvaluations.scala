@@ -9,7 +9,7 @@ import smile.regression.{GradientTreeBoost, Regression}
 
 
 object PredictorPerformanceEvaluations extends SmileLocalBench {
-  override def timeSeriesLen: Int = 2
+  override def timeSeriesLen: Int = 1
 
   private type SmileRegression = Regression[Array[Double]] with java.io.Serializable
   private case class Predictor(name: String, regression: SmileRegression) {

@@ -15,8 +15,8 @@ import com.github.mlangc.wetterfrosch.smile.implicits._
 import com.typesafe.scalalogging.StrictLogging
 
 object Wetterfrosch extends ExportDataModule with StrictLogging {
-  private def numFolds = 25
-  private def nCvRuns = 50
+  private def numFolds = 5
+  private def nCvRuns = 1
 
   override def seed: Int = super.seed
 
@@ -58,9 +58,9 @@ object Wetterfrosch extends ExportDataModule with StrictLogging {
       val evaluations: Array[Evaluations] = Array(
         //train("Persistence", new PersistenceModelSingleValuePredictorDummyTrainer, trainTestSplit)._2,
         //train("Mean", new MeanSingleValuePredictorTrainer, trainTestSplit)._2,
-        train(s"Tree-$suffix", new SmileRegressionTreeTrainer(11), trainTestSplit)._2,
+        //train(s"Tree-$suffix", new SmileRegressionTreeTrainer(11), trainTestSplit)._2,
         //train(s"Gbm-$suffix", new SmileGbmRegressionTrainer(500, 6), trainTestSplit)._2,
-        //train(s"OLS-$timeSeriesLen", new SmileOlsTrainer(), trainTestSplit)._2,
+        train(s"FfNn-$timeSeriesLen", new SmileFfNnTrainer, trainTestSplit)._2,
         //train(s"Ridge-$suffix", new SmileRidgeRegressionTrainer(1), trainTestSplit)._2
         //train(s"Forst-$suffix", new SmileRandomForestRegressionTrainer(nTrees = 500), trainTestSplit)._2
         //regEvaluations
