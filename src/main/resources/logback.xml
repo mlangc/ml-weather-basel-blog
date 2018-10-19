@@ -25,6 +25,7 @@
     <logger name="com.github.mlangc.wetterfrosch.dl4j.SingleValueOutputRnnTrainer" level="info"/>
     <logger name="org.deeplearning4j.optimize.listeners.ScoreIterationListener" level="warn"/>
     <logger name="at.ipsquare.commons.core.util.PerformanceLogger" level="debug"/>
+    <logger name="neuroflow" level="debug"/>
 
     <root level="warn">
         <appender-ref ref="STDOUT"/>
