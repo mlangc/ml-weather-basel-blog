@@ -40,6 +40,21 @@ object ExportDataUtils {
     LocalDate.of(year, month, day)
   }
 
+  def selectCols(seqs: Seq[Seq[Map[String, Double]]], cols: Seq[Set[String]])
+                (implicit dummyImplicit: DummyImplicit): Seq[Seq[Map[String, Double]]] = {
+    seqs.map(seq => selectCols(seq, cols))
+  }
+
+  def selectCols(seq: Seq[Map[String, Double]], colss: Seq[Set[String]]): Seq[Map[String, Double]] = {
+    val nRows = seq.size
+    val nSelects = colss.size
+    assert(nRows == nSelects || nRows == nSelects + 1)
+
+    val allKeys = seq.head.keySet
+    seq.zipAll(colss, Map.empty[String, Double], allKeys)
+      .map { case (row, cols) => row.filterKeys(cols) }
+  }
+
   private def yearMonthDayFrom(row: Map[String, Double]): (Int, Int, Int) = {
     (row(Year).toInt, row(Month).toInt, row(Day).toInt)
   }

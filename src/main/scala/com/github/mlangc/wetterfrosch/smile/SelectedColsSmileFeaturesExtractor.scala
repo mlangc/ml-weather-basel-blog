@@ -1,5 +1,7 @@
 package com.github.mlangc.wetterfrosch.smile
 
+import com.github.mlangc.wetterfrosch.ExportDataUtils
+
 class SelectedColsSmileFeaturesExtractor private (cols: Array[Set[String]]) extends SmileFeaturesExtractor {
   require(cols.nonEmpty)
 
@@ -12,24 +14,13 @@ class SelectedColsSmileFeaturesExtractor private (cols: Array[Set[String]]) exte
   }
 
   override def toFeatures(seq: Seq[Map[String, Double]]): Array[Double] = {
-    assert(seq.size == cols.size)
-
     DefaultSmileFeaturesExtractor.toFeatures {
-      seq.zip(cols).map { case (row, currentCols) =>
-        row.filterKeys(currentCols)
-      }
+      ExportDataUtils.selectCols(seq, cols)
     }
   }
 
   override def toFeaturesWithLabels(seqs: Seq[Seq[Map[String, Double]]], targetCol: String): (Array[Array[Double]], Array[Double]) = {
-    val adaptedSeqs = seqs.map { seq =>
-      val last = seq.size - 1
-      seq.zipWithIndex.map { case (row, i) =>
-          if (i == last) row
-          else row.filterKeys(cols(i))
-      }
-    }
-
+    val adaptedSeqs = ExportDataUtils.selectCols(seqs, cols)
     DefaultSmileFeaturesExtractor.toFeaturesWithLabels(adaptedSeqs, targetCol)
   }
 }

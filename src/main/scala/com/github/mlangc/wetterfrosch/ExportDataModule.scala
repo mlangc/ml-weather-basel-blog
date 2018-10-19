@@ -4,8 +4,6 @@ import com.softwaremill.macwire.wire
 
 trait ExportDataModule {
   def seed = 42
-  def batchSize = 64
-
   def targetCol: String = HistoryExportCols.TotalPrecipitationDailySum
 
   lazy val historyExportRowTransformers = new HistoryExportRowTransformers()
