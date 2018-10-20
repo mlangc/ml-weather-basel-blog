@@ -7,6 +7,7 @@ import neuroflow.dsl._
 import neuroflow.nets.cpu.DenseNetwork._
 import neuroflow.core.Network.Vectors
 import breeze.linalg.DenseVector
+import neuroflow.core
 import neuroflow.nets.cpu.DenseNetworkDouble
 
 object EvalSimpleFfNn extends NeuroFlowLabModule {
@@ -16,19 +17,22 @@ object EvalSimpleFfNn extends NeuroFlowLabModule {
       layout =
         Vector(colNames.size) ::
         Dense(20, ReLU) ::
+        Dense(1, ReLU) ::
         Dense(1, Linear) ::
         SquaredError(),
       settings = Settings[Double](
-        updateRule = Vanilla(),
+        updateRule = Momentum(0.9),
         batchSize = Some(1024),
+        iterations = 10
       )
     )
+    val trainingData = trainTestSplit.trainingData.take(100)
 
-    val (features, labels) = toFeaturesWithLabels(trainTestSplit.trainingData)
+    val (features, labels) = toFeaturesWithLabels(trainingData)
     net.train(features, labels)
 
     val predictor = new NeuroFlowFfNnSingleValuePredictor(net, targetCol)
-    val trainEvaluation = evaluator.eval(predictor, trainTestSplit.trainingData)
+    val trainEvaluation = evaluator.eval(predictor, trainingData)
     val testEvaluation = evaluator.eval(predictor, trainTestSplit.testData)
 
     println(s"Train: $trainEvaluation")
