@@ -43,10 +43,3 @@ resolvers ++= Seq(
   "neuroflow-libs" at "https://github.com/zenecture/neuroflow-libs/raw/master/"
 )
 
-
-
-
-
-
-
-
