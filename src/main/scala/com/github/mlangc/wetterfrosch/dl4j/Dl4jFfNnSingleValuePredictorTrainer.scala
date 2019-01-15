@@ -19,17 +19,17 @@ class Dl4jFfNnSingleValuePredictorTrainer(seed: Int,
   def train(trainingData: Seq[Seq[Map[String, Double]]], targetCol: String): SingleValuePredictor = {
     val numInput = trainingData.head.init.map(_.size).sum
     val numOutput = 1
-    val numHidden1 = numInput / 2
+    val numHidden1 = 4
 
     val nnConf: MultiLayerConfiguration = new NeuralNetConfiguration.Builder()
       .seed(seed)
-      .weightInit(WeightInit.XAVIER)
+      .weightInit(WeightInit.UNIFORM)
       .updater(new Adam())
       .list()
       .layer(0, new DenseLayer.Builder()
         .nIn(numInput).nOut(numHidden1)
         .activation(Activation.RELU).build())
-      .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MEAN_ABSOLUTE_ERROR)
+      .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MEAN_SQUARED_LOGARITHMIC_ERROR)
         .nIn(numHidden1).nOut(numOutput)
         .activation(Activation.IDENTITY).build())
       .pretrain(false)

@@ -20,8 +20,8 @@ import scala.util.Random
 object TrainAndEvalSimpleFfNn extends Dl4jLabModule {
   override def timeSeriesLen = 1
   def batchSize = 1024
-  def maxTrainingExamples = 100000
-  def maxTestExamples = 256
+  def maxTrainingExamples = 1000000
+  def maxTestExamples = 1024
   def selectedCols: Set[String] = HistoryExportColSubsets.ColsFromLastDayForTree23
 
   override lazy val featuresExtractor = new SelectedColsDl4jFfNnFeaturesExtractor(selectedCols)
@@ -29,21 +29,20 @@ object TrainAndEvalSimpleFfNn extends Dl4jLabModule {
   def main(args: Array[String]): Unit = {
     val numInput = selectedCols.size * timeSeriesLen
     val numOutput = 1
-    val numHidden1 = 4
+    val numHidden1 = 8
     val modelKey = StoreKey(getClass, "ffNn-3")
 
     def trainModelInitialModel() = {
       val nnConf: MultiLayerConfiguration = new NeuralNetConfiguration.Builder()
         .seed(seed)
-        .weightInit(WeightInit.XAVIER)
+        .weightInit(WeightInit.UNIFORM)
         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
         .updater(new Adam())
-        .learningRate(0.4)
         .list()
         .layer(0, new DenseLayer.Builder()
           .nIn(numInput).nOut(numHidden1)
-          .activation(Activation.RELU).build())
-        .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
+          .activation(Activation.LEAKYRELU).build())
+        .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MEAN_SQUARED_LOGARITHMIC_ERROR)
           .nIn(numHidden1).nOut(numOutput)
           .activation(Activation.IDENTITY).build())
         .pretrain(false)
@@ -65,9 +64,11 @@ object TrainAndEvalSimpleFfNn extends Dl4jLabModule {
         val testIter = getTestIter(batchSize)
         val testEvaluation = nn.evaluateRegression(testIter)
 
-        //      println(s"Test error (epoch $epoch): ")
-        //      println(s"  RMSE: ${testEvaluation.averagerootMeanSquaredError()}")
-        //      println(s"  MAE: ${testEvaluation.averageMeanAbsoluteError()}")
+        /*
+        println(s"Test error (epoch $epoch): ")
+        println(s"  RMSE: ${testEvaluation.averagerootMeanSquaredError()}")
+        println(s"  MAE: ${testEvaluation.averageMeanAbsoluteError()}")
+        */
 
         val trainEvaluation = nn.evaluateRegression(trainingIter)
         trainingIter.reset()
@@ -91,9 +92,9 @@ object TrainAndEvalSimpleFfNn extends Dl4jLabModule {
         val testIter = getTestIter(batchSize)
         val testEvaluation = nn.evaluateRegression(testIter)
 
-        //      println(s"Test error (epoch $epoch): ")
-        //      println(s"  RMSE: ${testEvaluation.averagerootMeanSquaredError()}")
-        //      println(s"  MAE: ${testEvaluation.averageMeanAbsoluteError()}")
+        println(s"Test error (epoch $epoch): ")
+        println(s"  RMSE: ${testEvaluation.averagerootMeanSquaredError()}")
+        println(s"  MAE: ${testEvaluation.averageMeanAbsoluteError()}")
 
         val trainEvaluation = nn.evaluateRegression(trainingIter)
         trainingIter = getTestIter(batchSize)
