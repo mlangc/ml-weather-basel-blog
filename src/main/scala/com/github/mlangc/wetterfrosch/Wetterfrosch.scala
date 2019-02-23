@@ -149,5 +149,4 @@ object Wetterfrosch extends ExportDataModule with UtilityModule with StrictLoggi
   private def  trainMeanModel(trainTestSplit: TrainTestSplit) = {
     train("Mean", new MeanSingleValuePredictorTrainer(), trainTestSplit)
   }
-
 }

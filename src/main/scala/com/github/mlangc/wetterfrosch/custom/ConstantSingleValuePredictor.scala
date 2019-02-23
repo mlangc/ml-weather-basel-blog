@@ -10,6 +10,6 @@ class ConstantSingleValuePredictor(val targetCol: String, constant: Double)
   }
 
   override def toString: String = {
-    getClass.getSimpleName + s"($targetCol, $constant)"
+    f"Always $constant%.1f Predictor"
   }
 }
