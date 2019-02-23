@@ -7,13 +7,14 @@ import smile.validation
 
 object ExperimentWithFfNn extends SmileLabModule {
   def main(args: Array[String]): Unit = {
-    val trainingExamples = 500
+    val trainingExamples = Int.MaxValue
     val epochs = 1000
     val actualTrainFeatures = trainFeatures.take(trainingExamples)
     val numInputs = actualTrainFeatures.head.size
     val actualTrainLabels = trainLabels.take(trainingExamples)
 
-    val nn = new NeuralNetwork(ActivationFunction.TANH, Array(numInputs, numInputs / 3, 1): _*)
+    val nn = new NeuralNetwork(ActivationFunction.LOGISTIC_SIGMOID, Array(numInputs, 2, 2, 1): _*)
+    nn.setLearningRate(5e-4)
     //nn.setMomentum(0.9)
     //nn.setLearningRate(1e-6)
 

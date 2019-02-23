@@ -9,13 +9,15 @@ import com.cibo.evilplot.plot.aesthetics.DefaultTheme._
 import com.cibo.evilplot.plot.renderers.PointRenderer
 import com.cibo.evilplot.plot.{Overlay, ScatterPlot}
 import com.github.mlangc.wetterfrosch.HistoryExportCols.Day
+import com.github.mlangc.wetterfrosch.custom.MeanSingleValuePredictorTrainer
 import com.github.mlangc.wetterfrosch.dl4j.{Dl4jFfNnSingleValuePredictorTrainer, SingleValueOutputRnnTrainer}
 import com.github.mlangc.wetterfrosch.smile._
 import com.github.mlangc.wetterfrosch.smile.implicits._
+import com.github.mlangc.wetterfrosch.util.UtilityModule
 import com.typesafe.scalalogging.StrictLogging
 
-object Wetterfrosch extends ExportDataModule with StrictLogging {
-  private def numFolds = 5
+object Wetterfrosch extends ExportDataModule with UtilityModule with StrictLogging {
+  private def numFolds = 2
   private def nCvRuns = 1
 
   override def seed: Int = super.seed
@@ -50,7 +52,9 @@ object Wetterfrosch extends ExportDataModule with StrictLogging {
 
       val trainTestSplit = new TrainTestSplit(trainTestData, seed)
       //val (rnnModel, rnnEvaluations) = trainRnn(trainTestSplit)
-      //val (regModel, regEvaluations) = trainRidgeRegression(trainTestSplit)
+      val (olsModel, olsEvaluations) = trainOls(trainTestSplit)
+      val (ffNnModel, ffNnEvaluations) = trainFfNn(trainTestSplit)
+      val (meanModel, _) = trainMeanModel(trainTestSplit)
 
       val smileFeaturesExtractor = new SelectedColsSmileFeaturesExtractor(
         Seq.fill(timeSeriesLen)(selectedColsForFeatureExtraction))
@@ -60,17 +64,17 @@ object Wetterfrosch extends ExportDataModule with StrictLogging {
         //train("Mean", new MeanSingleValuePredictorTrainer, trainTestSplit)._2,
         //train(s"Tree-$suffix", new SmileRegressionTreeTrainer(11), trainTestSplit)._2,
         //train(s"Gbm-$suffix", new SmileGbmRegressionTrainer(500, 6), trainTestSplit)._2,
-        train(s"Dl4jFfNn-$timeSeriesLen", new Dl4jFfNnSingleValuePredictorTrainer(seed, 128, 5), trainTestSplit)._2
+        //train(s"Dl4jFfNn-$timeSeriesLen", new SmileFfNnTrainer(), trainTestSplit)._2
         //train(s"Ridge-$suffix", new SmileRidgeRegressionTrainer(1), trainTestSplit)._2
-        //train(s"Forst-$suffix", new SmileRandomForestRegressionTrainer(nTrees = 500), trainTestSplit)._2
+        //train(s"Forst-$suffix", new SmileRandomForestRegressionTrainer(nTrees = 500), trainTestSplit)._2,
+        //train(s"SmileFfNn-$suffix", new SmileFfNnTrainer(), trainTestSplit)._2
         //regEvaluations
       )
 
-      println(evaluationsToCsv(evaluations))
-      //makeNicePlots(rnnModel, regModel, plotData)
+      //println(evaluationsToCsv(evaluations))
+      displayPlot(plotUtils.compareVisually(targetCol, plotData, olsModel, ffNnModel, meanModel))
       Unit
     }
-
   }
 
   private def evaluationsToCsv(evaluations: Array[Evaluations]): String = {
@@ -130,7 +134,20 @@ object Wetterfrosch extends ExportDataModule with StrictLogging {
     train("Ridge Regression", new SmileRidgeRegressionTrainer, trainTestSplit)
   }
 
+  private def trainOls(trainTestSplit: TrainTestSplit) = {
+    train("OLS", new SmileOlsTrainer(), trainTestSplit)
+  }
+
   private def trainRnn(trainTestSplit: TrainTestSplit) = {
     train("RNN", new SingleValueOutputRnnTrainer(seed, 16), trainTestSplit)
   }
+
+  private def  trainFfNn(trainTestSplit: TrainTestSplit) = {
+    train("FFNN", new SmileFfNnTrainer(), trainTestSplit)
+  }
+
+  private def  trainMeanModel(trainTestSplit: TrainTestSplit) = {
+    train("Mean", new MeanSingleValuePredictorTrainer(), trainTestSplit)
+  }
+
 }

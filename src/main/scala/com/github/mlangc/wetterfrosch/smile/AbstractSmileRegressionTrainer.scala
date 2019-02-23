@@ -5,6 +5,7 @@ import com.github.mlangc.wetterfrosch.SingleValuePredictorTrainer
 import smile.regression.Regression
 
 abstract class AbstractSmileRegressionTrainer(
+ algName: String,
   /** Performs the training with the given features and labels
     */
   val trainModel: (Array[Array[Double]], Array[Double]) => Regression[Array[Double]]
@@ -17,7 +18,9 @@ abstract class AbstractSmileRegressionTrainer(
 
     val regression = trainModel(trainingFeatures, trainingLabels)
     new SmileRegressionSingleValuePredictor(
-      regression, targetCol, featuresExtractor.toFeatures)
+      regression, targetCol, featuresExtractor.toFeatures) {
+        override def toString() = algName + " Predictor"
+    }
   }
 
   def featuresExtractor: SmileFeaturesExtractor =

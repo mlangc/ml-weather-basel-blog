@@ -7,7 +7,7 @@ object ExamineFfNn extends SmileLabModule {
 
   def main(args: Array[String]): Unit = {
     val trainer = new SmileFfNnTrainer
-    val trainingExamples = 10
+    val trainingExamples = Int.MaxValue
     val actualTrainingData = trainTestSplit.trainingData.take(trainingExamples)
     val predictor = trainer.train(actualTrainingData, targetCol)
 
