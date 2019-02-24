@@ -1,5 +1,7 @@
 package com.github.mlangc.wetterfrosch.smile
 
+import com.github.mlangc.wetterfrosch.HistoryExportColSubsets
+import com.github.mlangc.wetterfrosch.util.tune.TuningHelpers.formatMetricWithSetting
 import com.github.mlangc.wetterfrosch.util.tune.{SettingsTuner, TuningHelpers}
 import smile.regression.NeuralNetwork
 import smile.regression.NeuralNetwork.ActivationFunction
@@ -7,10 +9,11 @@ import smile.validation
 
 import scala.math.max
 
-object TuneFfNn extends SmileLabModule {
-  object cfg {
+object TuneSmileFfNn extends SmileLabModule {
+  private object cfg {
     def epochs = 1
     def nEvaluations = 50
+    def selectedCols = HistoryExportColSubsets.ColsFromLastDayForTree23
   }
 
   def main(args: Array[String]): Unit = {
@@ -19,10 +22,12 @@ object TuneFfNn extends SmileLabModule {
     println("Exploring different settings...")
 
     val explorations = exploreSettings()
-    explorations.foreach { case (settings, mse) =>
-      println(f"$mse%10.2f - $settings")
+    explorations.foreach { p =>
+      println(formatMetricWithSetting(p))
     }
   }
+
+  override def featuresExtractor: SmileFeaturesExtractor = new SelectedColsSmileFeaturesExtractor(cfg.selectedCols)
 
   private def nInput = trainFeatures(0).length
 
@@ -33,7 +38,7 @@ object TuneFfNn extends SmileLabModule {
   private val tuner = new SettingsTuner[NnSettings](seed) {
     override protected def numAxes: Int = 4
 
-    override protected def variationsAlogAxis(setting: NnSettings, axis: Int): Seq[NnSettings] = axis match {
+    override protected def variationsAlongAxis(setting: NnSettings, history: Map[NnSettings, Double], axis: Int): Seq[NnSettings] = axis match {
       case 0 =>
         val hiddenUnitsToTry = max(2, setting.hiddenUnits - 5).to(setting.hiddenUnits + 5)
         hiddenUnitsToTry.map(u => setting.copy(hiddenUnits = u))
@@ -61,11 +66,11 @@ object TuneFfNn extends SmileLabModule {
       trainer.setMomentum(0.1)
       trainer.setWeightDecay(settings.weightDecay)
 
-      1.to(cfg.nEvaluations).map { _ =>
+      TuningHelpers.avg(cfg.nEvaluations) {
         val nn = trainer.train(trainFeatures, trainLabels)
         val trainPredictions = nn.predict(trainFeatures)
         validation.rmse(trainLabels, trainPredictions)
-      }.sum / cfg.nEvaluations
+      }
     }
   }
 

@@ -12,12 +12,12 @@ abstract class SettingsTuner[SettingsType](seed: Int = 42) {
       if (iterations >= maxIterations || retries >= maxRetries) explored else {
         val (bestSetting, bestValue) = explored.minBy(_._2)
         val axis = rng.nextInt(numAxes)
-        val settings = variationsAlogAxis(bestSetting, axis)
+        val settings = variationsAlongAxis(bestSetting, explored, axis)
         val settingsWithEvals = settings.par.map(s => s -> evalSettings(s))
         val (bestNewSettings, bestNewValue) = settingsWithEvals.minBy(_._2)
 
         val newRetries = {
-          if (bestNewValue <= bestValue) retries
+          if (bestNewValue < bestValue) retries
           else retries + 1
         }
 
@@ -36,6 +36,6 @@ abstract class SettingsTuner[SettingsType](seed: Int = 42) {
   }
 
   protected def numAxes: Int
-  protected def variationsAlogAxis(setting: SettingsType, axis: Int): Seq[SettingsType]
+  protected def variationsAlongAxis(setting: SettingsType, history: Map[SettingsType, Double], axis: Int): Seq[SettingsType]
   protected def evalSettings(settings: SettingsType): Double
 }
