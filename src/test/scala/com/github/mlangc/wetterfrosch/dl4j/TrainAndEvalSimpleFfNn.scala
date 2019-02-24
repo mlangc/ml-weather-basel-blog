@@ -29,7 +29,7 @@ object TrainAndEvalSimpleFfNn extends Dl4jLabModule {
   def main(args: Array[String]): Unit = {
     val numInput = selectedCols.size * timeSeriesLen
     val numOutput = 1
-    val numHidden1 = 8
+    val numHidden1 = 4
     val modelKey = StoreKey(getClass, "ffNn-3")
 
     def trainModelInitialModel() = {
@@ -37,11 +37,10 @@ object TrainAndEvalSimpleFfNn extends Dl4jLabModule {
         .seed(seed)
         .weightInit(WeightInit.XAVIER)
         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-        .updater(new Adam())
         .list()
         .layer(0, new DenseLayer.Builder()
           .nIn(numInput).nOut(numHidden1)
-          .activation(Activation.RELU).build())
+          .activation(Activation.SIGMOID).build())
         .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
           .nIn(numHidden1).nOut(numOutput)
           .activation(Activation.IDENTITY).build())
