@@ -9,5 +9,4 @@
 *.jfr
 .DS_Store
 target/
-history*.csv
 out/
