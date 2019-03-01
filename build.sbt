@@ -2,7 +2,7 @@ name := "wetter-frosch"
 
 version := "0.1"
 
-scalaVersion := "2.12.7"
+scalaVersion := "2.12.8"
 
 val dl4jVer = "0.9.1"
 libraryDependencies += "org.deeplearning4j" % "deeplearning4j-core" % dl4jVer
