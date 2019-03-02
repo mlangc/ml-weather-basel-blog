@@ -1,6 +1,6 @@
 package com.github.mlangc.wetterfrosch.dl4j
 
-import com.github.mlangc.wetterfrosch.{HistoryExportColSubsets, HistoryExportCols}
+import com.github.mlangc.wetterfrosch.HistoryExportColSubsets
 import com.github.mlangc.wetterfrosch.util.tune.{SettingsTuner, TuningHelpers}
 import org.deeplearning4j.nn.api.OptimizationAlgorithm
 import org.deeplearning4j.nn.conf.layers.{DenseLayer, OutputLayer}
@@ -9,28 +9,39 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.nn.weights.WeightInit
 import org.nd4j.linalg.activations.Activation
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
-import org.nd4j.linalg.learning.config.{Adam, IUpdater, Nesterovs, RmsProp, Sgd}
+import org.nd4j.linalg.learning.config._
 import org.nd4j.linalg.lossfunctions.LossFunctions
 
 import scala.util.Random
 
 object TuneSimpleDl4jFfNn extends Dl4jLabModule {
   def main(args: Array[String]): Unit = {
-    println(s"Using ${cfg.epochs} epochs for training with ${cfg.nEvals} evaluations for each setting...")
+    val millis = System.currentTimeMillis()
+    println(s"Using ${cfg.epochs} epochs for training with ${cfg.nEvals} evaluations for each setting")
+    println(s"Maximal number of iterations is ${cfg.maxIterations} with no more than ${cfg.maxRetries} retries")
     println()
     println("Exploring different settings...")
 
-    val explorations = tuner.tune(NnSettings(), maxIterations = 250, maxRetries = 50)
+    val explorations = tuner.tune(NnSettings(), maxIterations = cfg.maxIterations, maxRetries = cfg.maxRetries)
+
+    println()
+    println("Exploration done")
+    println("Summary:")
     explorations.foreach { p =>
       println(TuningHelpers.formatMetricWithSetting(p))
     }
+    val elapsed = System.currentTimeMillis() - millis
+    println("")
+    println(s"Done after ${elapsed}ms")
   }
 
 
   private object cfg {
     def epochs = 15
-    def nEvals = 25
-    def selectedCols = HistoryExportColSubsets.ColsFromLastDayForTree23
+    def nEvals = 5
+    def maxIterations = 100
+    def maxRetries = 3
+    def selectedCols: Set[String] = HistoryExportColSubsets.ColsFromLastDayForTree23
   }
 
   override lazy val featuresExtractor = new SelectedColsDl4jFfNnFeaturesExtractor(cfg.selectedCols)
@@ -60,37 +71,39 @@ object TuneSimpleDl4jFfNn extends Dl4jLabModule {
   }
 
   private val DefaultAdamSpec = UpdaterSpec.fromCtorWithDefaultArgs(
-    Updater.ADAM, 1.18e2,
+    Updater.ADAM, 3.00e00,
     new Adam(_, Adam.DEFAULT_ADAM_BETA1_MEAN_DECAY, Adam.DEFAULT_ADAM_BETA2_VAR_DECAY, Adam.DEFAULT_ADAM_EPSILON))
 
   private val DefaultSgdSpec = UpdaterSpec.fromCtorWithDefaultArgs(
-    Updater.SGD, 3.2e-2, new Sgd(_)
+    Updater.SGD, 5.33e-3, new Sgd(_)
   )
 
   private val DefaultNesterovsSpec = UpdaterSpec.fromCtorWithDefaultArgs(
-    Updater.NESTEROVS, 2.5e-2, new Nesterovs(_, Nesterovs.DEFAULT_NESTEROV_MOMENTUM)
+    Updater.NESTEROVS, 3.00e-2, new Nesterovs(_, Nesterovs.DEFAULT_NESTEROV_MOMENTUM)
   )
 
   private val DefaultRmsPropSpec = UpdaterSpec.fromCtorWithDefaultArgs(
-    Updater.RMSPROP, 3.33e1,
+    Updater.RMSPROP, 1.50e00,
     new RmsProp(_, RmsProp.DEFAULT_RMSPROP_RMSDECAY, RmsProp.DEFAULT_RMSPROP_EPSILON)
   )
 
-  private val DefaultUpdaterSpecs = Array(DefaultAdamSpec, DefaultSgdSpec, DefaultNesterovsSpec, DefaultRmsPropSpec)
+  //private val DefaultUpdaterSpecs = Array(DefaultAdamSpec, DefaultSgdSpec, DefaultNesterovsSpec, DefaultRmsPropSpec)
+  private val ActiveDefaultUpdaterSpecs = Array(DefaultRmsPropSpec)
 
-  private case class NnSettings(batchSize: Int = 1350,
+  private case class NnSettings(batchSize: Int = 128,
                                 hiddenLayers: Int = 8,
                                 activation: Activation = Activation.SIGMOID,
-                                updater: UpdaterSpec = DefaultRmsPropSpec)
+                                updater: UpdaterSpec = DefaultRmsPropSpec,
+                                reshuffle: Boolean = true)
 
   private def numInputs: Int = cfg.selectedCols.size
 
-  private val tuner = new SettingsTuner[NnSettings](seed) {
-    override protected def numAxes: Int = DefaultUpdaterSpecs.size + 2
+  private val tuner = new SettingsTuner[NnSettings](rng) {
+    override protected def numAxes: Int = ActiveDefaultUpdaterSpecs.size
 
     override protected def variationsAlongAxis(setting: NnSettings, history: Map[NnSettings, Double], axis: Int): Seq[NnSettings] = {
-      if (axis < DefaultUpdaterSpecs.size) {
-        val defaultSpec = DefaultUpdaterSpecs(axis)
+      if (axis < ActiveDefaultUpdaterSpecs.size) {
+        val defaultSpec = ActiveDefaultUpdaterSpecs(axis)
         val bestUpdaterSoFar: UpdaterSpec = history
           .filterKeys(_.updater.updater == defaultSpec.updater)
           .toSeq
@@ -101,26 +114,33 @@ object TuneSimpleDl4jFfNn extends Dl4jLabModule {
         val a = learningRate/2
         val b = learningRate*2
         val l = b - a
-        val n = 10
+        val n = 16
         val s = l/(n-1)
         val learningRates: Seq[Double] = 0.until(n).map(i => a + i*s).filterNot(_ == learningRate)
-        learningRates.map(learningRate => setting.copy(updater = bestUpdaterSoFar.withLearningRate(learningRate)))
+        learningRates
+          .map(learningRate => setting.copy(updater = bestUpdaterSoFar.withLearningRate(learningRate)))
+          .filterNot(history.keySet.contains(_))
       } else {
-        (axis - DefaultUpdaterSpecs.size) match {
+        (axis - ActiveDefaultUpdaterSpecs.size) match {
           case 0 =>
-            val batchSizes = TuningHelpers.doublesBetweenAandB(setting.batchSize, 32, 1024*4, 15)
-                .map(_.toInt)
-                .filterNot(_ == setting.batchSize)
-                .distinct
+            val newSetting = setting.copy(reshuffle = !setting.reshuffle)
+            if (history.keySet.contains(newSetting)) Seq()
+            else Seq(newSetting)
 
-            batchSizes.map(batchSize => setting.copy(batchSize = batchSize))
+//          case 0|1|2 =>
+//            val batchSizes = TuningHelpers.doublesBetweenAandB(setting.batchSize, 32, 1024*4, 15)
+//                .map(_.toInt)
+//                .filterNot(_ == setting.batchSize)
+//                .distinct
+//
+//            batchSizes.map(batchSize => setting.copy(batchSize = batchSize))
 
-          case 1|2 =>
-            TuningHelpers.doublesBetweenAandB(setting.hiddenLayers, 2, 15, 8)
-              .map(_.toInt)
-              .filterNot(_ == setting.hiddenLayers)
-              .distinct
-              .map(hiddenLayers => setting.copy(hiddenLayers = hiddenLayers))
+//          case 1|2 =>
+//            TuningHelpers.doublesBetweenAandB(setting.hiddenLayers, 2, 15, 8)
+//              .map(_.toInt)
+//              .filterNot(_ == setting.hiddenLayers)
+//              .distinct
+//              .map(hiddenLayers => setting.copy(hiddenLayers = hiddenLayers))
 
 //          case 2 =>
 //            Seq(Activation.SIGMOID, Activation.TANH)
@@ -137,7 +157,9 @@ object TuneSimpleDl4jFfNn extends Dl4jLabModule {
         val nn = initNn(settings)
         0.until(cfg.epochs).foreach { _ =>
           nn.fit(trainingIter)
-          trainingIter.reset()
+
+          if (settings.reshuffle) trainingIter.reshuffle(rng)
+          else trainingIter.reset()
         }
 
         if (nn.getLayer(0).params().getDouble(0).isNaN) {
@@ -147,6 +169,10 @@ object TuneSimpleDl4jFfNn extends Dl4jLabModule {
           evaluation.averagerootMeanSquaredError()
         }
       }
+    }
+
+    override protected def onProgress(iteration: Int, bestSettings: NnSettings, bestRmse: Double): Unit = {
+      println(f"  Best setting after iteration $iteration%4d: " + TuningHelpers.formatMetricWithSetting(bestSettings -> bestRmse))
     }
   }
 
@@ -177,11 +203,11 @@ object TuneSimpleDl4jFfNn extends Dl4jLabModule {
     nn
   }
 
-  private def getTrainingIter(batchSize: Int): DataSetIterator = {
+  private def getTrainingIter(batchSize: Int): DataSetIterator with HasShuffleSupport = {
     toLabeledDataSetIter(rng.shuffle(trainTestSplit.trainingData), batchSize)
   }
 
-  private def toLabeledDataSetIter(labeledData: Seq[Seq[Map[String, Double]]], batchSize: Int): DataSetIterator = {
+  private def toLabeledDataSetIter(labeledData: Seq[Seq[Map[String, Double]]], batchSize: Int): DataSetIterator with HasShuffleSupport = {
     featuresExtractor.toFeaturesWithLabels(labeledData, targetCol, batchSize)
   }
 }

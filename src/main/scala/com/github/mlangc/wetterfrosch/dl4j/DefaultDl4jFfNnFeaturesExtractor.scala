@@ -7,7 +7,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
 import org.nd4j.linalg.factory.Nd4j
 
 object DefaultDl4jFfNnFeaturesExtractor extends Dl4jFeaturesExtractor {
-  def toFeaturesWithLabels(seqs: Seq[Seq[Map[String, Double]]], targetCol: String, batchSize: Int): DataSetIterator = {
+  def toFeaturesWithLabels(seqs: Seq[Seq[Map[String, Double]]], targetCol: String, batchSize: Int): DataSetIterator with HasShuffleSupport = {
     val numExamples = seqs.size
     val numFeatures = seqs.head.init.map(_.keys.size).sum
 
@@ -23,7 +23,7 @@ object DefaultDl4jFfNnFeaturesExtractor extends Dl4jFeaturesExtractor {
       }
     }
 
-    new ListDataSetIterator(new DataSet(featureArr, labelsArr).asList(), batchSize)
+    new ListDataSetIteratorWithShuffleSupport(new DataSet(featureArr, labelsArr).asList(), batchSize)
   }
 
   def toFeatures(seqs: Seq[Seq[Map[String, Double]]]): INDArray = {

@@ -19,10 +19,11 @@ import scala.util.Random
 
 object TrainAndEvalSimpleFfNn extends Dl4jLabModule {
   override def timeSeriesLen = 1
-  private def batchSize = 1350
+  private def batchSize = 128
   private def maxTrainingExamples = Int.MaxValue
   private def maxTestExamples = Int.MaxValue
   private def selectedCols: Set[String] = HistoryExportColSubsets.ColsFromLastDayForTree23
+  private val rng = new Random(seed)
 
   override lazy val featuresExtractor = new SelectedColsDl4jFfNnFeaturesExtractor(selectedCols)
 
@@ -30,15 +31,17 @@ object TrainAndEvalSimpleFfNn extends Dl4jLabModule {
     val numInput = selectedCols.size * timeSeriesLen
     val numOutput = 1
     val numHidden = 8
-    val learningRate = 1.5e1
-    val modelKey = StoreKey(getClass, "ffNn-7")
+    val learningRate = 3.75e-01
+    val modelKey = StoreKey(getClass, "ffNn-15")
 
     def trainModelInitialModel() = {
       val nnConf: MultiLayerConfiguration = new NeuralNetConfiguration.Builder()
         .seed(seed)
         .weightInit(WeightInit.XAVIER)
         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+        //.updater(new Adam(learningRate, Adam.DEFAULT_ADAM_BETA1_MEAN_DECAY, Adam.DEFAULT_ADAM_BETA2_VAR_DECAY, Adam.DEFAULT_ADAM_EPSILON))
         .updater(new RmsProp(learningRate, RmsProp.DEFAULT_RMSPROP_RMSDECAY, RmsProp.DEFAULT_RMSPROP_EPSILON))
+        .learningRate(learningRate)
         .list()
         .layer(0, new DenseLayer.Builder()
           .nIn(numInput).nOut(numHidden)
@@ -86,7 +89,7 @@ object TrainAndEvalSimpleFfNn extends Dl4jLabModule {
     def continueTraining(nn: MultiLayerNetwork): MultiLayerNetwork = {
       val trainingIter = getTrainingIter(batchSize)
 
-      1.to(25).foreach { epoch =>
+      1.to(500).foreach { epoch =>
         nn.fit(trainingIter)
         trainingIter.reset()
 
@@ -98,7 +101,7 @@ object TrainAndEvalSimpleFfNn extends Dl4jLabModule {
 //        println(s"  MAE: ${testEvaluation.averageMeanAbsoluteError()}")
 
         val trainEvaluation = nn.evaluateRegression(trainingIter)
-        trainingIter.reset()
+        trainingIter.reshuffle(rng)
 
         println(s"Training error (epoch $epoch): ")
         println(s"  RMSE: ${trainEvaluation.averagerootMeanSquaredError()}")
@@ -115,15 +118,15 @@ object TrainAndEvalSimpleFfNn extends Dl4jLabModule {
     }
   }
 
-  private def getTrainingIter(batchSize: Int): DataSetIterator = {
-    toLabeledDataSetIter(Random.shuffle(trainTestSplit.trainingData).take(maxTrainingExamples), batchSize)
+  private def getTrainingIter(batchSize: Int): DataSetIterator with HasShuffleSupport = {
+    toLabeledDataSetIter(rng.shuffle(trainTestSplit.trainingData).take(maxTrainingExamples), batchSize)
   }
 
-  private def getTestIter(batchSize: Int): DataSetIterator = {
+  private def getTestIter(batchSize: Int): DataSetIterator with HasShuffleSupport = {
     toLabeledDataSetIter(trainTestSplit.testData.take(maxTestExamples), batchSize)
   }
 
-  private def toLabeledDataSetIter(labeledData: Seq[Seq[Map[String, Double]]], batchSize: Int): DataSetIterator = {
+  private def toLabeledDataSetIter(labeledData: Seq[Seq[Map[String, Double]]], batchSize: Int): DataSetIterator with HasShuffleSupport = {
     featuresExtractor.toFeaturesWithLabels(labeledData, targetCol, batchSize)
   }
 }

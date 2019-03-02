@@ -6,7 +6,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
 class SelectedColsDl4jFfNnFeaturesExtractor(cols: Array[Set[String]]) extends Dl4jFeaturesExtractor {
   def this(cols: Set[String]) = this(Array(cols))
 
-  def toFeaturesWithLabels(seqs: Seq[Seq[Map[String, Double]]], targetCol: String, batchSize: Int): DataSetIterator = {
+  def toFeaturesWithLabels(seqs: Seq[Seq[Map[String, Double]]], targetCol: String, batchSize: Int): DataSetIterator with HasShuffleSupport = {
     DefaultDl4jFfNnFeaturesExtractor.toFeaturesWithLabels(selectCols(seqs, cols), targetCol, batchSize)
   }
 
