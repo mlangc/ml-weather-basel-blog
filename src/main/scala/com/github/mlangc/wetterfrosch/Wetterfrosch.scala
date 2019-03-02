@@ -17,8 +17,8 @@ import com.github.mlangc.wetterfrosch.util.UtilityModule
 import com.typesafe.scalalogging.StrictLogging
 
 object Wetterfrosch extends ExportDataModule with UtilityModule with StrictLogging {
-  private def numFolds = 2
-  private def nCvRuns = 1
+  private def numFolds = 25
+  private def nCvRuns = 50
 
   override def seed: Int = super.seed
 
@@ -67,12 +67,12 @@ object Wetterfrosch extends ExportDataModule with UtilityModule with StrictLoggi
         //train(s"Dl4jFfNn-$timeSeriesLen", new SmileFfNnTrainer(), trainTestSplit)._2
         //train(s"Ridge-$suffix", new SmileRidgeRegressionTrainer(1), trainTestSplit)._2
         //train(s"Forst-$suffix", new SmileRandomForestRegressionTrainer(nTrees = 500), trainTestSplit)._2,
-        //train(s"SmileFfNn-$suffix", new SmileFfNnTrainer(), trainTestSplit)._2
+        //train(s"SmileFfNn-$suffix", new SmileFfNnTrainer(smileFeaturesExtractor), trainTestSplit)._2
         //regEvaluations
       )
 
       //println(evaluationsToCsv(evaluations))
-      displayPlot(plotUtils.compareVisually(targetCol, plotData, olsModel, ffNnModel, meanModel))
+      displayPlot(plotUtils.compareVisually(targetCol, plotData, ffNnModel, meanModel))
       Unit
     }
   }
