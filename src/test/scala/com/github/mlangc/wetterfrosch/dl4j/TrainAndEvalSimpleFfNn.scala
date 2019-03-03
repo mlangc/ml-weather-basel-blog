@@ -32,29 +32,29 @@ object TrainAndEvalSimpleFfNn extends Dl4jLabModule {
     val numOutput = 1
     val numHidden = 8
     val learningRate = 3.75e-01
-    val modelKey = StoreKey(getClass, "ffNn-15")
+    val modelKey = StoreKey(getClass, "ffNn-16")
 
     def trainModelInitialModel() = {
-      val nnConf: MultiLayerConfiguration = new NeuralNetConfiguration.Builder()
-        .seed(seed)
-        .weightInit(WeightInit.XAVIER)
-        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-        //.updater(new Adam(learningRate, Adam.DEFAULT_ADAM_BETA1_MEAN_DECAY, Adam.DEFAULT_ADAM_BETA2_VAR_DECAY, Adam.DEFAULT_ADAM_EPSILON))
-        .updater(new RmsProp(learningRate, RmsProp.DEFAULT_RMSPROP_RMSDECAY, RmsProp.DEFAULT_RMSPROP_EPSILON))
-        .learningRate(learningRate)
-        .list()
-        .layer(0, new DenseLayer.Builder()
-          .nIn(numInput).nOut(numHidden)
-          .activation(Activation.SIGMOID).build())
-        .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
-          .nIn(numHidden).nOut(numOutput)
-          .activation(Activation.IDENTITY).build())
-        .pretrain(false)
-        .backprop(true)
-        .build()
+val nnConf: MultiLayerConfiguration = new NeuralNetConfiguration.Builder()
+  .seed(seed)
+  .weightInit(WeightInit.XAVIER)
+  .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+  //.updater(new Adam(learningRate, Adam.DEFAULT_ADAM_BETA1_MEAN_DECAY, Adam.DEFAULT_ADAM_BETA2_VAR_DECAY, Adam.DEFAULT_ADAM_EPSILON))
+  .updater(new RmsProp(learningRate, RmsProp.DEFAULT_RMSPROP_RMSDECAY, RmsProp.DEFAULT_RMSPROP_EPSILON))
+  .learningRate(learningRate)
+  .list()
+  .layer(0, new DenseLayer.Builder()
+    .nIn(numInput).nOut(numHidden)
+    .activation(Activation.SIGMOID).build())
+  .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
+    .nIn(numHidden).nOut(numOutput)
+    .activation(Activation.IDENTITY).build())
+  .pretrain(false)
+  .backprop(true)
+  .build()
 
-      val nn = new MultiLayerNetwork(nnConf)
-      nn.init()
+val nn = new MultiLayerNetwork(nnConf)
+nn.init()
       nn.setListeners(new ScoreIterationListener(1))
       trainNn(nn)
     }
@@ -89,9 +89,9 @@ object TrainAndEvalSimpleFfNn extends Dl4jLabModule {
     def continueTraining(nn: MultiLayerNetwork): MultiLayerNetwork = {
       val trainingIter = getTrainingIter(batchSize)
 
-      1.to(500).foreach { epoch =>
-        nn.fit(trainingIter)
-        trainingIter.reset()
+1.to(500).foreach { epoch =>
+  nn.fit(trainingIter)
+  trainingIter.reset()
 
 //        val testIter = getTestIter(batchSize)
 //        val testEvaluation = nn.evaluateRegression(testIter)

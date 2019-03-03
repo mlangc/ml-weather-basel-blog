@@ -11,19 +11,19 @@ object DefaultDl4jFfNnFeaturesExtractor extends Dl4jFeaturesExtractor {
     val numExamples = seqs.size
     val numFeatures = seqs.head.init.map(_.keys.size).sum
 
-    val featureArr = Nd4j.create(numExamples, numFeatures)
-    val labelsArr = Nd4j.create(numExamples, 1)
+    val featureMat = Nd4j.create(numExamples, numFeatures)
+    val labelsVec = Nd4j.create(numExamples, 1)
 
     seqs.zipWithIndex.foreach { case (seq, i) =>
       val label = seq.last(targetCol)
-      labelsArr.putScalar(Array(i, 0), label)
+      labelsVec.putScalar(i, 0, label)
 
       ExportDataUtils.toDoubles(seq.init).zipWithIndex.foreach { case (d, j) =>
-        featureArr.putScalar(Array(i, j), d)
+        featureMat.putScalar(i, j, d)
       }
     }
 
-    new ListDataSetIteratorWithShuffleSupport(new DataSet(featureArr, labelsArr).asList(), batchSize)
+    new ListDataSetIteratorWithShuffleSupport(new DataSet(featureMat, labelsVec).asList(), batchSize)
   }
 
   def toFeatures(seqs: Seq[Seq[Map[String, Double]]]): INDArray = {
@@ -33,7 +33,7 @@ object DefaultDl4jFfNnFeaturesExtractor extends Dl4jFeaturesExtractor {
 
     seqs.zipWithIndex.foreach { case (seq, i) =>
       ExportDataUtils.toDoubles(seq.init).zipWithIndex.foreach { case (d, j) =>
-        featureArr.putScalar(Array(i, j), d)
+        featureArr.putScalar(i, j, d)
       }
     }
 

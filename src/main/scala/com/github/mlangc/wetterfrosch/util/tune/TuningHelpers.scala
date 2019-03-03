@@ -34,6 +34,14 @@ object TuningHelpers {
     valuesBetweenZeroAndOneAround(mapped, n).map(v => v*scale + offset)
   }
 
+  def randomDoublesBetweenAandB(current: Double, a: Double, b: Double, n: Int): Seq[Double] = {
+    require(a < b)
+    require(current >= a)
+    require(current <= b)
+
+    ???
+  }
+
   def avg[T](ts: Seq[T])(f: T => Double): Option[Double] = {
     if (ts.isEmpty) None else {
       Some(ts.map(f).sum / ts.size)

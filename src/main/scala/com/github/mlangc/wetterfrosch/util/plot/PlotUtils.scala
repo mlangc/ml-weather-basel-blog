@@ -11,6 +11,10 @@ import com.github.mlangc.wetterfrosch.{HistoryExportCols, SingleValuePredictor}
 
 class PlotUtils {
   def compareVisually(targetCol: String, seqs: Seq[Seq[Map[String, Double]]], predictor: SingleValuePredictor, predictors: SingleValuePredictor*): Plot = {
+    def mkLabelText(msg: String) = {
+      Text(msg = msg, size = 20)
+    }
+
     val actualPoints = seqs.map { seqs =>
       val last = seqs.last
       val day = last(HistoryExportCols.Day)
@@ -20,7 +24,7 @@ class PlotUtils {
 
     val actualValuesPlot = ScatterPlot(
       actualPoints,
-      pointRenderer = Some(PointRenderer.default(color = Some(HTMLNamedColors.black), pointSize = Some(5), label = Text("Actual"))))
+      pointRenderer = Some(PointRenderer.default(color = Some(HTMLNamedColors.black), pointSize = Some(5), label = mkLabelText("Actual"))))
 
     val colors = Stream.continually(
         Stream(
@@ -39,7 +43,7 @@ class PlotUtils {
       val points = days.zip(predictions).map { case (day, y) => Point(day, y) }
       ScatterPlot(
         points,
-        pointRenderer = Some(PointRenderer.default(color = Some(color), label = Text(predictor.toString)))
+        pointRenderer = Some(PointRenderer.default(color = Some(color), label = mkLabelText(predictor.toString)))
       )
     }
 

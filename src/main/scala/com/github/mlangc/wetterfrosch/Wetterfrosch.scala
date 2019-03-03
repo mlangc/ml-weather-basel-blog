@@ -18,7 +18,7 @@ import com.typesafe.scalalogging.StrictLogging
 
 object Wetterfrosch extends ExportDataModule with UtilityModule with StrictLogging {
   private def numFolds = 25
-  private def nCvRuns = 50
+  private def nCvRuns = 1
 
   override def seed: Int = super.seed
 
