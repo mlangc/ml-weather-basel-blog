@@ -1,9 +1,11 @@
 package com.github.mlangc.wetterfrosch
 
+import com.github.mlangc.wetterfrosch.util.RandomModule
 import com.softwaremill.macwire.wire
 
-trait ExportDataModule {
-  def seed = 42
+import scala.util.Random
+
+trait ExportDataModule extends RandomModule {
   def targetCol: String = HistoryExportCols.TotalPrecipitationDailySum
 
   lazy val historyExportRowTransformers = new HistoryExportRowTransformers()

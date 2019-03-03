@@ -1,7 +1,7 @@
 package com.github.mlangc.wetterfrosch.dl4j
 
 import com.github.mlangc.wetterfrosch.HistoryExportColSubsets
-import com.github.mlangc.wetterfrosch.util.tune.{SettingsTuner, TuningHelpers}
+import com.github.mlangc.wetterfrosch.util.tune.SettingsTuner
 import org.deeplearning4j.nn.api.OptimizationAlgorithm
 import org.deeplearning4j.nn.conf.layers.{DenseLayer, OutputLayer}
 import org.deeplearning4j.nn.conf.{MultiLayerConfiguration, NeuralNetConfiguration, Updater}
@@ -11,8 +11,6 @@ import org.nd4j.linalg.activations.Activation
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
 import org.nd4j.linalg.learning.config._
 import org.nd4j.linalg.lossfunctions.LossFunctions
-
-import scala.util.Random
 
 object TuneSimpleDl4jFfNn extends Dl4jLabModule {
   def main(args: Array[String]): Unit = {
@@ -28,7 +26,7 @@ object TuneSimpleDl4jFfNn extends Dl4jLabModule {
     println("Exploration done")
     println("Summary:")
     explorations.foreach { p =>
-      println(TuningHelpers.formatMetricWithSetting(p))
+      println(tuningHelpers.formatMetricWithSetting(p))
     }
     val elapsed = System.currentTimeMillis() - millis
     println("")
@@ -37,7 +35,7 @@ object TuneSimpleDl4jFfNn extends Dl4jLabModule {
 
 
   private object cfg {
-    def epochs = 15
+    def epochs = 100
     def nEvals = 5
     def maxIterations = 100
     def maxRetries = 3
@@ -45,8 +43,6 @@ object TuneSimpleDl4jFfNn extends Dl4jLabModule {
   }
 
   override lazy val featuresExtractor = new SelectedColsDl4jFfNnFeaturesExtractor(cfg.selectedCols)
-
-  private val rng = new Random(seed)
 
   private abstract class UpdaterSpec {
     def updater: Updater
@@ -70,6 +66,18 @@ object TuneSimpleDl4jFfNn extends Dl4jLabModule {
     }
   }
 
+  private case class RmsPropUpdaterSpec(learningRate: Double = 5.20e-01,
+                                decay: Double = 9.60e-01,
+                                epsilon: Double = RmsProp.DEFAULT_RMSPROP_EPSILON) extends UpdaterSpec {
+    def updater: Updater = Updater.RMSPROP
+    def instantiate(): IUpdater = new RmsProp(learningRate, decay, epsilon)
+    def withLearningRate(r: Double): UpdaterSpec = copy(learningRate = r)
+
+    override def toString: String = {
+      f"UpdaterSpec($updater, $learningRate%.2e, $decay%.2e, $epsilon%.2e)"
+    }
+  }
+
   private val DefaultAdamSpec = UpdaterSpec.fromCtorWithDefaultArgs(
     Updater.ADAM, 3.00e00,
     new Adam(_, Adam.DEFAULT_ADAM_BETA1_MEAN_DECAY, Adam.DEFAULT_ADAM_BETA2_VAR_DECAY, Adam.DEFAULT_ADAM_EPSILON))
@@ -82,10 +90,7 @@ object TuneSimpleDl4jFfNn extends Dl4jLabModule {
     Updater.NESTEROVS, 3.00e-2, new Nesterovs(_, Nesterovs.DEFAULT_NESTEROV_MOMENTUM)
   )
 
-  private val DefaultRmsPropSpec = UpdaterSpec.fromCtorWithDefaultArgs(
-    Updater.RMSPROP, 1.50e00,
-    new RmsProp(_, RmsProp.DEFAULT_RMSPROP_RMSDECAY, RmsProp.DEFAULT_RMSPROP_EPSILON)
-  )
+  private val DefaultRmsPropSpec = RmsPropUpdaterSpec()
 
   //private val DefaultUpdaterSpecs = Array(DefaultAdamSpec, DefaultSgdSpec, DefaultNesterovsSpec, DefaultRmsPropSpec)
   private val ActiveDefaultUpdaterSpecs = Array(DefaultRmsPropSpec)
@@ -110,16 +115,30 @@ object TuneSimpleDl4jFfNn extends Dl4jLabModule {
           .reduceOption((l, r) => if (l._2 < r._2) l else r)
           .map(_._1.updater).getOrElse(defaultSpec)
 
-        val learningRate = bestUpdaterSoFar.learningRate
-        val a = learningRate/2
-        val b = learningRate*2
-        val l = b - a
-        val n = 16
-        val s = l/(n-1)
-        val learningRates: Seq[Double] = 0.until(n).map(i => a + i*s).filterNot(_ == learningRate)
-        learningRates
-          .map(learningRate => setting.copy(updater = bestUpdaterSoFar.withLearningRate(learningRate)))
-          .filterNot(history.keySet.contains(_))
+        bestUpdaterSoFar match {
+          case bestUpdaterSoFar: RmsPropUpdaterSpec =>
+            val minLearningRate = bestUpdaterSoFar.learningRate/2
+            val maxLearningRate = bestUpdaterSoFar.learningRate*2
+            val learningRates = tuningHelpers.randomDoublesBetweenAandB(bestUpdaterSoFar.learningRate, minLearningRate, maxLearningRate,  25)
+            val decays = tuningHelpers.randomDoublesBetweenZeroAndOne(bestUpdaterSoFar.decay, 25)
+
+            learningRates.zip(decays).map { case (learningRate, decay) =>
+              val updater = bestUpdaterSoFar.copy(learningRate = learningRate, decay = decay)
+              setting.copy(updater = updater)
+            }
+
+          case _ =>
+            val learningRate = bestUpdaterSoFar.learningRate
+            val a = learningRate/2
+            val b = learningRate*2
+            val l = b - a
+            val n = 16
+            val s = l/(n-1)
+            val learningRates: Seq[Double] = 0.until(n).map(i => a + i*s).filterNot(_ == learningRate)
+            learningRates
+              .map(learningRate => setting.copy(updater = bestUpdaterSoFar.withLearningRate(learningRate)))
+              .filterNot(history.keySet.contains(_))
+        }
       } else {
         (axis - ActiveDefaultUpdaterSpecs.size) match {
           case 0 =>
@@ -153,7 +172,7 @@ object TuneSimpleDl4jFfNn extends Dl4jLabModule {
     override protected def evalSettings(settings: NnSettings): Double = {
       val trainingIter = getTrainingIter(settings.batchSize)
 
-      TuningHelpers.avg(cfg.nEvals) {
+      tuningHelpers.avg(cfg.nEvals) {
         val nn = initNn(settings)
         0.until(cfg.epochs).foreach { _ =>
           nn.fit(trainingIter)
@@ -172,7 +191,7 @@ object TuneSimpleDl4jFfNn extends Dl4jLabModule {
     }
 
     override protected def onProgress(iteration: Int, bestSettings: NnSettings, bestRmse: Double): Unit = {
-      println(f"  Best setting after iteration $iteration%4d: " + TuningHelpers.formatMetricWithSetting(bestSettings -> bestRmse))
+      println(f"  Best setting after iteration $iteration%4d: " + tuningHelpers.formatMetricWithSetting(bestSettings -> bestRmse))
     }
   }
 

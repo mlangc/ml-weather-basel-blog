@@ -1,8 +1,7 @@
 package com.github.mlangc.wetterfrosch.smile
 
 import com.github.mlangc.wetterfrosch.HistoryExportColSubsets
-import com.github.mlangc.wetterfrosch.util.tune.TuningHelpers.formatMetricWithSetting
-import com.github.mlangc.wetterfrosch.util.tune.{SettingsTuner, TuningHelpers}
+import com.github.mlangc.wetterfrosch.util.tune.SettingsTuner
 import smile.regression.NeuralNetwork
 import smile.regression.NeuralNetwork.ActivationFunction
 import smile.validation
@@ -10,6 +9,8 @@ import smile.validation
 import scala.math.max
 
 object TuneSmileFfNn extends SmileLabModule {
+  import tuningHelpers.formatMetricWithSetting
+
   private object cfg {
     def epochs = 1
     def nEvaluations = 50
@@ -51,11 +52,11 @@ object TuneSmileFfNn extends SmileLabModule {
         learningRatesToTry.map(r => setting.copy(learningRate = r))
 
       case 2 =>
-        val weightDecaysToTry = TuningHelpers.valuesBetweenZeroAndOneAround(setting.weightDecay, 10).map(_ * 0.1)
+        val weightDecaysToTry = tuningHelpers.valuesBetweenZeroAndOneAround(setting.weightDecay, 10).map(_ * 0.1)
         weightDecaysToTry.map(d => setting.copy(weightDecay = d))
 
       case _ =>
-        val momentumsToTry = TuningHelpers.valuesBetweenZeroAndOneAround(setting.momentum, 10)
+        val momentumsToTry = tuningHelpers.valuesBetweenZeroAndOneAround(setting.momentum, 10)
         momentumsToTry.map(m => setting.copy(momentum = m))
     }
 
@@ -66,7 +67,7 @@ object TuneSmileFfNn extends SmileLabModule {
       trainer.setMomentum(0.1)
       trainer.setWeightDecay(settings.weightDecay)
 
-      TuningHelpers.avg(cfg.nEvaluations) {
+      tuningHelpers.avg(cfg.nEvaluations) {
         val nn = trainer.train(trainFeatures, trainLabels)
         val trainPredictions = nn.predict(trainFeatures)
         validation.rmse(trainLabels, trainPredictions)
